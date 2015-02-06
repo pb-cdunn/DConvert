@@ -58,6 +58,8 @@
 
 #include "QV.h"
 
+namespace dalign {
+
 typedef unsigned char      uint8;
 typedef unsigned short     uint16;
 typedef unsigned int       uint32;
@@ -75,7 +77,6 @@ typedef double             float64;
 #define READMAX  65535      //  Maximum # of reads in a DB partition block
 
 typedef uint16   READIDX;   //  Reads can be no longer than 2^16
-
 
 /*******************************************************************************************
  *
@@ -362,5 +363,7 @@ void Read_All_Sequences(HITS_DB *db, int ascii);
   //   Return non-zero iff path could not be opened for any reason.
 
 int List_DB_Files(char *path, void foreach(char *path, char *extension));
+
+}
 
 #endif // _HITS_DB

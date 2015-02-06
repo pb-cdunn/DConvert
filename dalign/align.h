@@ -58,6 +58,7 @@
 
 #define _A_MODULE
 
+namespace dalign {
 /*** PATH ABSTRACTION:
 
      Coordinates are *between* characters where 0 is the tick just before the first char,
@@ -309,5 +310,5 @@ typedef struct {
   int  Check_Trace_Points(Overlap *ovl, int tspace, int verbose, char *fname);
 
   void Print_OCartoon(FILE *file, Overlap *ovl, int indent);
-
+}
 #endif // _A_MODULE

@@ -68,6 +68,7 @@
  *  Endian flipping routines
  *
  ********************************************************************************************/
+namespace dalign {
 
 static int LittleEndian;  //  Little-endian machine ?
                           //     Referred by: Decode & Decode_Run
@@ -1285,4 +1286,5 @@ void Uncompress_Next_QVentry(FILE *input, char **entry, QVcoding *coding, int rl
   else
     Decode_Run((HScheme*)coding->subScheme, (HScheme*)coding->sRunScheme, input,
                entry[4], rlen, coding->subChar);
+}
 }

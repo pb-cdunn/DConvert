@@ -64,6 +64,7 @@
 #define PATHSEP "/"
 #endif
 
+namespace dalign {
 
 /*******************************************************************************************
  *
@@ -1255,4 +1256,5 @@ void Print_Read(char *s, int width)
         }
       printf("\n");
     }
+}
 }

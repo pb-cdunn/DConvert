@@ -82,6 +82,7 @@
 
 #undef  WAVE_STATS
 
+namespace dalign {
 
 /****************************************************************************************\
 *                                                                                        *
@@ -3252,4 +3253,5 @@ void Compute_Trace_MID(Alignment *align, Work_Data *ework, int trace_spacing)
   path->trace = work->trace;
   path->tlen  = wave.Stop - ((int *) path->trace);
   path->diffs = (READIDX) diffs;
+}
 }

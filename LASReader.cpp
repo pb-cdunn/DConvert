@@ -11,22 +11,22 @@ LASReader::LASReader(std::string las_name)
   // Open the LAS file.
   char* c_las_name = (char*)malloc(las_name.size() * sizeof(char));
   strcpy(c_las_name, las_name.c_str());
-  input = Fopen(c_las_name, "r");
+  input = dalign::Fopen(c_las_name, "r");
   free(c_las_name);
   
   // Do some boilerplate reading through initial fields of the LAS file.
-  fread(&num_overlaps,sizeof(int64),1,input);
+  fread(&num_overlaps,sizeof(dalign::int64),1,input);
   fread(&tspace,sizeof(int),1,input);
 
   if (tspace <= TRACE_XOVR) { small  = 1;
-    tbytes = sizeof(uint8);
+    tbytes = sizeof(dalign::uint8);
   } else {
     small  = 0;
-    tbytes = sizeof(uint16);
+    tbytes = sizeof(dalign::uint16);
   }
   
   tmax = 5000;
-  trace = (uint16_t *) Malloc(sizeof(uint16)*tmax,"Allocating trace vector");
+  trace = (uint16_t *) dalign::Malloc(sizeof(dalign::uint16)*tmax,"Allocating trace vector");
   ovl = &_ovl;
   
   ovl_counter = 0;
@@ -37,15 +37,15 @@ int LASReader::next_overlap(Overlap_T* overlap)
 {
   if(ovl_counter >= num_overlaps) return 0;
   
-  Read_Overlap(input, ovl);
+  dalign::Read_Overlap(input, ovl);
 
   if (ovl->path.tlen > tmax) {
     tmax = ((int) 1.2*ovl->path.tlen) + 100;
-    trace = (uint16_t *) Realloc(trace,sizeof(uint16)*tmax,"Allocating trace vector");
+    trace = (uint16_t *) dalign::Realloc(trace,sizeof(dalign::uint16)*tmax,"Allocating trace vector");
   }
 
   ovl->path.trace = (void *) trace;
-  Read_Trace(input, ovl, tbytes);
+  dalign::Read_Trace(input, ovl, tbytes);
 
   overlap->id_a = ovl->aread + 1;
   overlap->id_b = ovl->bread + 1;

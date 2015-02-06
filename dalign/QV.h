@@ -52,6 +52,7 @@
 
 #define _QV_COMPRESSOR
 
+namespace dalign {
   //  A PacBio compression scheme
 
 typedef struct
@@ -106,5 +107,5 @@ void      Compress_Next_QVentry(FILE *input, FILE *output, QVcoding *coding, int
   //    provides the length of each of the 5 vectors.
 
 void      Uncompress_Next_QVentry(FILE *input, char **entry, QVcoding *coding, int rlen);
-
+}
 #endif // _QV_COMPRESSOR

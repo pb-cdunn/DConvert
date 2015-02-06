@@ -21,7 +21,7 @@ class LASReader {
     int64_t ovl_counter;
     int tspace, tbytes, small, tmax;
     uint16_t* trace;
-    Overlap _ovl, *ovl;
+    dalign::Overlap _ovl, *ovl;
     FILE* input;
 
 };
