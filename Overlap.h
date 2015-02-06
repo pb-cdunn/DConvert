@@ -9,29 +9,27 @@
 
 typedef struct {
   // The names of the two reads that overlap
-  std::string name_a;
-  std::string name_b;
+  int id_a;
+  int id_b;
   
-  //The start positions of the overlap in each read
+  // The start positions of the overlap in each read
   int start_a;
   int start_b;
 
-  //The end positions of the overlap in each read
+  // The end positions of the overlap in each read
   int end_a;
   int end_b;
   
-  //The lengths of the entire read
+  // The lengths of the entire read
   int length_a;
   int length_b;
 
-  //Whether the overlap is in the same orientation in each read
+  // Whether the overlap is in the same orientation in each read
   bool forward;
+  
+  // The overlap edit distance
+  int diffs;
+
 } Overlap_T;
 
-typedef std::map<std::string, std::vector<int> > QnameToOvlsMap_T;
-
-void Overlap_create_map(const std::vector<Overlap_T>& overlaps,
-                        QnameToOvlsMap_T* qname_to_ovls);
-
-std::string Overlap_name_tail(const std::string& qname);
 #endif
