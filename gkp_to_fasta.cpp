@@ -20,7 +20,7 @@ int main(int argc, char* argv[])
     arg++;
   }
 
-  GKPReader gkp_reader(gkp_store_name, fastq_filename);
+  GKPReader gkp_reader(gkp_store_name);
   Read_T read;
 
   while(gkp_reader.next_read(&read)) {
