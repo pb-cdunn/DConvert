@@ -1,24 +1,34 @@
-#ifndef _OVBWRITER_H_
-#define _OVBWRITER_H_
+#ifndef DCONVERT_OVBWRITER_H_
+#define DCONVERT_OVBWRITER_H_
 
 #include "AS_OVS_overlapFile.H"
-
 #include "Overlap.h"
 
-#include <map>
 #include <string>
-#include <stdint.h>
 
 class OVBWriter {
+public:
+  OVBWriter(std::string ovb_name);
+  virtual ~OVBWriter();
+  virtual void write_overlap(const Overlap_T& overlap) = 0;
+
+protected:
+  BinaryOverlapFile* m_output_file;
+  Overlap_T m_cached_overlap;
+};
+
+
+class OBTWriter : public OVBWriter {
   public:
-    OVBWriter(std::string ovb_name, std::string fastq_name);
-    ~OVBWriter();
+    OBTWriter(std::string ovb_name) : OVBWriter(ovb_name) {}
+    ~OBTWriter();
+    void write_overlap(const Overlap_T& overlap);
+};
 
-    int write_overlap(const Overlap_T& overlap);
-
-  private:
-    BinaryOverlapFile* output_file;
-    std::map<std::string, uint32_t> name_to_iid;
+class OVLWriter : public OVBWriter {
+  public:
+    OVLWriter(std::string ovb_name) : OVBWriter(ovb_name) {}
+    void write_overlap(const Overlap_T& overlap);
 };
 
 #endif
