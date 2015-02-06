@@ -1,7 +1,7 @@
-CA_DIR=../../celera_assembler_replacement/wgs-8.1
+CELERA_DIR?=../../celera_assembler_replacement/wgs-8.1
 
 # A bunch of stuff from the Celera Assembler Makefile
-LDFLAGS= -D_GLIBCXX_PARALLEL -fopenmp -pthread -lm -lz -L $(CA_DIR)/Linux-amd64/lib -lCA
+LDFLAGS= -D_GLIBCXX_PARALLEL -fopenmp -pthread -lm -lz -L $(CELERA_DIR)/Linux-amd64/lib -lCA
 CXXFLAGS:= -D_GLIBCXX_PARALLEL -fopenmp
 CXXFLAGS+= -pthread -Wall -Wextra -Wno-write-strings -Wno-unused -Wno-char-subscripts -Wno-sign-compare -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DX86_GCC_LINUX
 CA_SUBDIRS = AS_RUN \
@@ -28,7 +28,7 @@ CA_SUBDIRS = AS_RUN \
              AS_ENV \
              AS_REF
 
-INC_IMPORT_DIRS += $(CA_DIR)/src $(patsubst %, $(CA_DIR)/src/%, $(strip $(CA_SUBDIRS)))
+INC_IMPORT_DIRS += $(CELERA_DIR)/src $(patsubst %, $(CELERA_DIR)/src/%, $(strip $(CA_SUBDIRS)))
 INC_DIRS = $(patsubst %, -I%, \ $(strip $(INC_IMPORT_DIRS)))
 
 CXXFLAGS+=$(INC_DIRS)
