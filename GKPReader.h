@@ -9,7 +9,7 @@
 
 class GKPReader {
   public:
-    GKPReader(std::string gkp_store_name, std::string fastq_name);
+    GKPReader(std::string gkp_store_name);
     ~GKPReader();
 
     int next_read(Read_T* read);
@@ -17,7 +17,6 @@ class GKPReader {
   private:
     gkStore* gk_store;    
     gkStream* gk_stream;
-    std::vector<std::string> fastq_names;
     int read_counter;
     int num_reads;
 };
