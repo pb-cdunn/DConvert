@@ -6,16 +6,18 @@ KNETFILE_O=	knetfile.o
 LOBJS=		bgzf.o kstring.o bam_aux.o bam.o bam_import.o sam.o bam_index.o	\
 			bam_pileup.o bam_lpileup.o bam_md.o razf.o faidx.o bedidx.o \
 			$(KNETFILE_O) bam_sort.o sam_header.o bam_reheader.o kprobaln.o bam_cat.o
-AOBJS=		bam_tview.o bam_plcmd.o sam_view.o \
+#AOBJS=		bam_tview.o bam_plcmd.o sam_view.o
+AOBJS=		bam_plcmd.o sam_view.o \
 			bam_rmdup.o bam_rmdupse.o bam_mate.o bam_stat.o bam_color.o \
 			bamtk.o kaln.o bam2bcf.o bam2bcf_indel.o errmod.o sample.o \
 			cut_target.o phase.o bam2depth.o padding.o bedcov.o bamshuf.o \
-			bam_tview_curses.o bam_tview_html.o
+#			bam_tview_curses.o bam_tview_html.o
 PROG=		samtools
 INCLUDES=	-I.
 SUBDIRS=	. bcftools misc
 LIBPATH=
-LIBCURSES=	-lcurses # -lXCurses
+#LIBCURSES=	-lcurses # -lXCurses
+LIBCURSES=
 
 .SUFFIXES:.c .o
 .PHONY: all lib
