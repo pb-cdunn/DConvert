@@ -1,5 +1,5 @@
 #include "OVBWriter.h"
-#include "Overlap.h"
+#include "Overlap.pb.h"
 #include "LASReader.h"
 
 #include <cstdlib>
@@ -30,26 +30,25 @@ int main(int argc, char* argv[])
     std::cerr << "-S <style: obt or ovl>" << std::endl;
     exit(1);
   }
-     
-  if(!(ovb_style == "obt" || ovb_style == "ovl")) {
-    std::cerr << "OVB style (-S) must be obt or ovl." << std::endl;
-    exit(1);
-  }
   
   OVBWriter* writer_ptr;
   if(ovb_style == "obt") {
     writer_ptr = new OBTWriter(ovb_name);
   } else if(ovb_style == "ovl") {
     writer_ptr = new OVLWriter(ovb_name);
+  } else {
+    std::cerr << "OVB style (-S) must be obt or ovl." << std::endl;
+    exit(1);
   }
 
+
   LASReader las_reader(las_name);
-  Overlap_T overlap;
+  proto::Overlap overlap;
 
   while(las_reader.next_overlap(&overlap)) {
     // We don't want to write each overlap twice, so only write those where the
     // ids are ordered.
-    if(overlap.id_a > overlap.id_b) continue;
+    if(overlap.id_1() > overlap.id_2()) continue;
     writer_ptr->write_overlap(overlap);
   }
   

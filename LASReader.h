@@ -5,7 +5,7 @@
 #include <vector>
 #include <stdint.h>
 
-#include "Overlap.h"
+#include "Overlap.pb.h"
 #include "dalign/DB.h"
 #include "dalign/align.h"
 
@@ -14,7 +14,7 @@ class LASReader {
     LASReader(std::string las_name);
     ~LASReader();
 
-    int next_overlap(Overlap_T* overlap);
+    int next_overlap(proto::Overlap* overlap);
 
   private:
     int64_t num_overlaps; 

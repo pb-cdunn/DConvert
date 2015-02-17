@@ -1,0 +1,15 @@
+syntax="proto2";
+package proto;
+
+message Overlap {
+  optional int32 id_1 = 1;
+  optional int32 id_2 = 2;
+  optional int32 start_1 = 3;
+  optional int32 start_2 = 4;
+  optional int32 end_1 = 5;
+  optional int32 end_2 = 6;
+  optional bool forward = 7;
+  optional int32 length_1 = 8;
+  optional int32 length_2 = 9;
+  optional int32 diffs = 10;
+}

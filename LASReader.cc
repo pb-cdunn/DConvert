@@ -33,7 +33,7 @@ LASReader::LASReader(std::string las_name)
 
 }
 
-int LASReader::next_overlap(Overlap_T* overlap)
+int LASReader::next_overlap(proto::Overlap* overlap)
 {
   if(ovl_counter >= num_overlaps) return 0;
   
@@ -47,24 +47,24 @@ int LASReader::next_overlap(Overlap_T* overlap)
   ovl->path.trace = (void *) trace;
   dalign::Read_Trace(input, ovl, tbytes);
 
-  overlap->id_a = ovl->aread + 1;
-  overlap->id_b = ovl->bread + 1;
-  overlap->start_a = ovl->path.abpos;
-  overlap->start_b = ovl->path.bbpos;
-  overlap->end_a = ovl->path.aepos;
-  overlap->end_b = ovl->path.bepos;
-  overlap->length_a = ovl->alen;
-  overlap->length_b = ovl->blen;
+  overlap->set_id_1(ovl->aread + 1);
+  overlap->set_id_2(ovl->bread + 1);
+  overlap->set_start_1(ovl->path.abpos);
+  overlap->set_start_2(ovl->path.bbpos);
+  overlap->set_end_1(ovl->path.aepos);
+  overlap->set_end_2(ovl->path.bepos);
+  overlap->set_length_1(ovl->alen);
+  overlap->set_length_2(ovl->blen);
   
-  overlap->forward = !COMP(ovl->flags);
+  overlap->set_forward(!COMP(ovl->flags));
   
-  overlap->diffs = ovl->path.diffs;
+  overlap->set_diffs(ovl->path.diffs);
 
   if(COMP(ovl->flags)) {
-    int orig_start_b = overlap->start_b;
-    int orig_end_b = overlap->end_b;
-    overlap->start_b = overlap->length_b - orig_end_b;
-    overlap->end_b = overlap->length_b - orig_start_b;
+    int orig_start_2 = overlap->start_2();
+    int orig_end_2 = overlap->end_2();
+    overlap->set_start_2(overlap->length_2() - orig_end_2);
+    overlap->set_end_2(overlap->length_2() - orig_start_2);
   }
 
   ovl_counter++;

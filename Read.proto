@@ -1,0 +1,9 @@
+syntax="proto2";
+package proto;
+
+message Read {
+  optional int32 id = 1;
+  optional int32 trimmed_start = 2;
+  optional int32 trimmed_end = 3;
+  optional int32 untrimmed_length = 4;
+} 
