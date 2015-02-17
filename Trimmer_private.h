@@ -33,4 +33,7 @@ void trim_terminating_overlaps(
       std::vector<proto::Overlap>* overlaps,
       const std::vector<TerminationInterval>& termination_intervals);
 
+void trim_deceptive_overlaps(std::vector<proto::Overlap>* overlaps,
+                             const std::vector<TerminationInterval>& termination_intervals,
+                             int max_deception_length);
 #endif

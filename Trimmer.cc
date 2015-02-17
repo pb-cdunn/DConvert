@@ -302,9 +302,52 @@ void trim_terminating_overlaps(
 }
 
 void trim_deceptive_overlaps(std::vector<proto::Overlap>* overlaps,
-                             const std::vector<TerminationInterval>& termination_intervals)
+                             const std::vector<TerminationInterval>& termination_intervals,
+                             int max_deception_length)
 {
-  // TODO
+  if(termination_intervals.size() == 0 ||
+     overlaps->size() == 0)
+    return;
+  auto direction = termination_intervals[0].direction;
+
+  if(direction == TerminationDirection::FROMTHELEFT) {
+    std::sort(overlaps->begin(), overlaps->end(),
+              [](proto::Overlap a, proto::Overlap b)
+                {return a.end_1() < b.end_1();});
+  } else {
+    std::sort(overlaps->begin(), overlaps->end(),
+              [](proto::Overlap a, proto::Overlap b)
+                {return a.start_1() < b.start_1();});
+  }
+
+  int interval_index = 0;
+  for(auto& overlap : *overlaps) {
+    if(!extends_to_end(overlap, direction)) continue;
+
+    int business_end = -1; 
+    int revised_bound = -1;
+    if(direction == TerminationDirection::FROMTHELEFT) {
+      business_end = overlap.end_1();
+      revised_bound = overlap.end_1() - max_deception_length;
+    } else {
+      business_end = overlap.start_1();
+      revised_bound = overlap.start_1() + max_deception_length;
+    }
+
+    // Skip ahead to the relevant termination interval
+    while(interval_index < termination_intervals.size() - 1 &&
+          termination_intervals[interval_index].end < business_end) {
+      ++interval_index;
+    }
+    auto termination_interval = termination_intervals[interval_index];
+    
+    if(std::min(revised_bound, business_end) <= termination_interval.end &&
+       std::max(revised_bound, business_end) >= termination_interval.start)
+    {
+      trim_overlap_to_interval(&overlap, termination_interval,
+                                direction);
+    }
+  }
 }
 
 bool is_spanned(int start, int end, int min_coverage, 

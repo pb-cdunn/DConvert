@@ -233,6 +233,7 @@ class HoleInMiddleTest : public ::testing::Test
   //  <<<<<<<<</
   //   >>>>>>
   //      >>>>>/
+  //                        <<<<<<<<<</
   //                          \>>>>>>>/
   //                           \<<<<
   // **********************************
@@ -265,7 +266,10 @@ public:
     ovls.push_back(ovl);
     ovl.set_start_1(100); ovl.set_end_1(245); ovl.set_start_2(0); ovl.set_end_2(145); ovl.set_length_2(145); ovl.set_forward(true);
     ovls.push_back(ovl);
+    ovl.set_length_2(800);
     ovl.set_start_1(150); ovl.set_end_1(250); ovl.set_start_2(0); ovl.set_end_2(100); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(765); ovl.set_end_1(1000); ovl.set_start_2(565); ovl.set_end_2(800); ovl.set_forward(false);
     ovls.push_back(ovl);
     ovl.set_start_1(800); ovl.set_end_1(1000); ovl.set_start_2(200); ovl.set_end_2(400); ovl.set_forward(true);
     ovls.push_back(ovl);
@@ -345,3 +349,27 @@ TEST_F(HoleInMiddleTest, TestTrimTerminatingOverlaps)
 }
 
     
+TEST_F(HoleInMiddleTest, TestTrimDeceptiveOverlaps)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+  trim_deceptive_overlaps(&ovls, left_intervals, 50);
+  trim_deceptive_overlaps(&ovls, right_intervals, 50);
+
+  auto ends_at_250 = std::count_if(ovls.begin(), ovls.end(),
+                                    [](proto::Overlap o){return o.end_1() == 250;});
+  EXPECT_EQ(ends_at_250, 5);
+
+  auto ends_at_590 = std::count_if(ovls.begin(), ovls.end(), [](proto::Overlap o){return o.end_1() == 590;});
+  EXPECT_EQ(ends_at_590, 4);
+  
+  auto starts_at_810 = std::count_if(ovls.begin(), ovls.end(), [](proto::Overlap o){return o.start_1() == 810;});
+  EXPECT_EQ(starts_at_810, 3);
+
+}
