@@ -33,6 +33,7 @@ LDFLAGS=-L/home/UNIXHOME/mkinsella/local/lib -lprotobuf
 # The protocol buffer files and how to make them
 PROTOS=$(wildcard *.proto)
 PROTO_SRCS=$(patsubst %.proto,%.pb.cc,$(PROTOS))
+PROTO_HS=$(patsubst %.proto,%.pb.h,$(PROTOS))
 
 %.pb.cc: %.proto
 	~/local/bin/protoc --cpp_out=$(dir $<) $<
@@ -77,7 +78,7 @@ $(STATICLIB): $(CELERA_DEPENDENT_OBJS) $(CELERA_INDEPENDENT_OBJS)
 
 clean:
 	rm -f $(CELERA_DEPENDENT_OBJS) $(CELERA_INDEPENDENT_OBJS) las_to_ovb
-	rm -f $(PROTO_SRCS)
+	rm -f $(PROTO_SRCS) $(PROTO_HS)
 	rm -f $(EXE_OBJS) $(EXES)
 	rm -f $(TESTS) $(STATICLIB)
 
