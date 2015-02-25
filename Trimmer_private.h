@@ -17,7 +17,7 @@ bool terminates_from_left(const proto::Overlap& overlap);
 bool terminates_from_right(const proto::Overlap& overlap);
 bool extends_to_end(const proto::Overlap& overlap, TerminationDirection direction);
 
-void trim_overlap_to_interval(proto::Overlap* overlap, TerminationInterval interval,
+void trim_overlap_to_interval(proto::Overlap* overlap, int start, int end,
                               TerminationDirection direction);
 
 std::vector<int> identify_terminating_overlaps(const std::vector<proto::Overlap>& overlaps,
@@ -36,4 +36,14 @@ void trim_terminating_overlaps(
 void trim_deceptive_overlaps(std::vector<proto::Overlap>* overlaps,
                              const std::vector<TerminationInterval>& termination_intervals,
                              int max_deception_length);
+
+std::vector<std::pair<int, int>> find_spanned_intervals(
+      const std::vector<TerminationInterval>& termination_intervals,
+      const std::vector<proto::Overlap>& overlaps,
+      int min_coverage);
+
+proto::Read trim_to_largest_spanned_interval(
+    std::vector<proto::Overlap>* overlaps,
+    const std::vector<std::pair<int, int>>& spanned_intervals);
+
 #endif

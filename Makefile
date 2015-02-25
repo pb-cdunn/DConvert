@@ -41,10 +41,10 @@ PROTO_HS=$(patsubst %.proto,%.pb.h,$(PROTOS))
 # Source files that need Celera Assembler
 CELERA_DEPENDENT_SRCS= OVBWriter.cc
 # Source files that don't need Celera Assembler
-CELERA_INDEPENDENT_SRCS= LASReader.cc dalign/DB.cc dalign/QV.cc dalign/align.cc Trimmer.cc
+CELERA_INDEPENDENT_SRCS= LASReader.cc dalign/DB.cc dalign/QV.cc dalign/align.cc Trimmer.cc OverlapPrinter.cc
 CELERA_INDEPENDENT_SRCS+=$(PROTO_SRCS)
 
-EXE_SRCS=read_from_las.cc write_to_ovb.cc
+EXE_SRCS=read_from_las.cc write_to_ovb.cc trim_reads.cc trim_overlaps.cc apply_trimming_to_gkp.cc
 EXE_OBJS=$(patsubst %.cc,%.o,$(EXE_SRCS))
 EXES=$(patsubst %.o,%,$(EXE_OBJS))
 
@@ -65,6 +65,15 @@ write_to_ovb: $(CELERA_INDEPENDENT_OBJS) $(CELERA_DEPENDENT_OBJS) write_to_ovb.o
 
 read_from_las: $(CELERA_INDEPENDENT_OBJS) read_from_las.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+trim_reads: $(CELERA_INDEPENDENT_OBJS) trim_reads.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+trim_overlaps: $(CELERA_INDEPENDENT_OBJS) trim_overlaps.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+
+apply_trimming_to_gkp: $(CELERA_INDEPENDENT_OBJS) apply_trimming_to_gkp.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(CELERA_LDFLAGS)
 
 $(CELERA_DEPENDENT_OBJS): CXXFLAGS+=$(CELERA_CXXFLAGS)
 ## Turn this off for now so we don't have to keep verifying that CA has been made

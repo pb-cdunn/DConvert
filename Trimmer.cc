@@ -1,5 +1,7 @@
 #include "Trimmer.h"
 
+#include "OverlapPrinter.h"
+
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -193,14 +195,19 @@ std::vector<int> identify_terminating_overlaps(
   std::vector<int> termination_positions;
   
   for(auto& overlap : overlaps) {
+    //std::cerr << "Checking ovl " << overlap.start_1() << " " << overlap.end_1() << std::endl;
     switch(direction) {
       case TerminationDirection::FROMTHELEFT : 
-        if(terminates_from_left(overlap))
+        if(terminates_from_left(overlap)) {
+          //std::cerr << "Pushing back left " << overlap.end_1() << std::endl;
           termination_positions.push_back(overlap.end_1());
+        }
         break;
       case TerminationDirection::FROMTHERIGHT : 
-        if(terminates_from_right(overlap))
+        if(terminates_from_right(overlap)) {
+          //std::cerr << "Pushing back right " << overlap.start_1() << std::endl;
           termination_positions.push_back(overlap.start_1());
+        }
         break;
       default :
         assert(!"Oh no.");
@@ -215,11 +222,12 @@ std::vector<int> identify_terminating_overlaps(
 // Trim the overlap back to the edge of the given interval in the specified
 // direction
 void trim_overlap_to_interval(
-      proto::Overlap* overlap, TerminationInterval interval,
+      proto::Overlap* overlap, int start, int end,
       TerminationDirection direction)
 {
   if(direction == TerminationDirection::FROMTHERIGHT) {
-    int adjustment_size = interval.end - overlap->start_1() - 1;
+    int adjustment_size = end - overlap->start_1() - 1;
+    if(adjustment_size < 0) adjustment_size = 0;
     adjustment_size = std::min(adjustment_size, overlap->end_1() - overlap->start_1());
     adjustment_size = std::min(adjustment_size, overlap->end_2() - overlap->start_2());
     assert(adjustment_size >= 0);
@@ -234,7 +242,9 @@ void trim_overlap_to_interval(
   } 
   
   else if(direction == TerminationDirection::FROMTHELEFT) {
-    int adjustment_size = overlap->end_1() - interval.start;
+    int adjustment_size = overlap->end_1() - start;
+    if(adjustment_size < 0) adjustment_size = 0;
+    adjustment_size = std::min(adjustment_size, overlap->end_1() - overlap->start_1());
     adjustment_size = std::min(adjustment_size, overlap->end_1() - overlap->start_1());
     adjustment_size = std::min(adjustment_size, overlap->end_2() - overlap->start_2());
     assert(adjustment_size >= 0);
@@ -294,8 +304,8 @@ void trim_terminating_overlaps(
       if((overlap.*business_end)() >= termination_interval.start &&
          (overlap.*business_end)() <= termination_interval.end)
       {
-        trim_overlap_to_interval(&overlap, termination_interval,
-                                 direction);
+        trim_overlap_to_interval(&overlap, termination_interval.start,
+                                 termination_interval.end, direction);
       }
     }
   }
@@ -344,8 +354,8 @@ void trim_deceptive_overlaps(std::vector<proto::Overlap>* overlaps,
     if(std::min(revised_bound, business_end) <= termination_interval.end &&
        std::max(revised_bound, business_end) >= termination_interval.start)
     {
-      trim_overlap_to_interval(&overlap, termination_interval,
-                                direction);
+      trim_overlap_to_interval(&overlap, termination_interval.start,
+                               termination_interval.end, direction);
     }
   }
 }
@@ -362,21 +372,120 @@ bool is_spanned(int start, int end, int min_coverage,
   return false;
 }
 
-std::vector<TerminationInterval> find_unspanned_intervals(
+std::vector<std::pair<int, int>> find_spanned_intervals(
       const std::vector<TerminationInterval>& termination_intervals,
       const std::vector<proto::Overlap>& overlaps,
       int min_coverage)
 {
-  std::vector<TerminationInterval> unspanned_intervals;
+  std::vector<std::pair<int, int>> spanned_intervals;  
+  if(overlaps.size() == 0 || termination_intervals.size() == 0) return spanned_intervals;
+
+  std::vector<int> boundaries;
+
   for(auto& termination_interval : termination_intervals) {
-    if(!is_spanned(termination_interval.start, termination_interval.end,
-                   min_coverage, overlaps)) {
-        unspanned_intervals.push_back(termination_interval);
+    if(termination_interval.direction == TerminationDirection::FROMTHELEFT) {
+      boundaries.push_back(termination_interval.start);
+    } else {
+      boundaries.push_back(termination_interval.end);
     }
   }
-  return unspanned_intervals;
+  boundaries.push_back(0);
+  boundaries.push_back(overlaps[0].length_1());
+
+  std::sort(boundaries.begin(), boundaries.end());
+  
+  bool last_interval_was_spanned = false;
+  int last_interval_start = 0;
+  int last_interval_end = 0;
+
+  for(int i=0; i<boundaries.size() - 1; i++) {
+    //std::cerr << "Checking interval " << boundaries[i] << " " << boundaries[i+1] << std::endl;
+    bool this_interval_is_spanned = is_spanned(boundaries[i], boundaries[i+1], min_coverage, overlaps);
+    //std::cerr << "Spanned? " << std::boolalpha << this_interval_is_spanned << std::endl;
+
+    if(!this_interval_is_spanned) {
+      if(last_interval_was_spanned) {
+        spanned_intervals.push_back(std::make_pair(last_interval_start, last_interval_end));
+      }
+      last_interval_start = 0;
+      last_interval_end = 0;
+      last_interval_was_spanned = false;
+    } else {
+      last_interval_end = boundaries[i+1];
+      if(!last_interval_was_spanned) {
+        last_interval_start = boundaries[i];
+      }
+      last_interval_was_spanned = true;
+    }
+  }
+  if(last_interval_was_spanned) {
+    spanned_intervals.push_back(std::make_pair(last_interval_start, last_interval_end));
+  }
+  return spanned_intervals;
 }
 
+proto::Read trim_to_largest_spanned_interval(const std::vector<proto::Overlap>& overlaps,
+                                             const std::vector<std::pair<int, int>>& spanned_intervals)
+{
+  if(overlaps.size() == 0) {
+    return proto::Read();
+  }
+  
+  // Initialize the output read to not trimming anything 
+  proto::Read output_read;  
+  output_read.set_id((overlaps)[0].id_1());
+  output_read.set_trimmed_start(0);
+  output_read.set_trimmed_end((overlaps)[0].length_1());
+  output_read.set_untrimmed_length((overlaps)[0].length_1());
+
+  if(spanned_intervals.size() == 0) {
+    return output_read;
+  }
+  
+  //std::cerr << "Before trimming to largest spanned interval: " << std::endl; 
+  //for(auto& overlap : *overlaps) {
+  //  std::cerr << overlap.DebugString() << std::endl;
+  //}
+    
+  using Interval = std::pair<int, int>;
+  Interval largest_interval = *std::max_element(spanned_intervals.begin(), spanned_intervals.end(),
+    [](Interval a, Interval b){return (a.second - a.first) < (b.second - b.first);});
+  
+  output_read.set_trimmed_start(largest_interval.first); 
+  output_read.set_trimmed_end(largest_interval.second); 
+
+  int interval_size = largest_interval.second - largest_interval.first;
+  //for(auto& overlap : *overlaps) {
+    // This will trim back the starts and ends of each overlap to the
+    // boundaries of the spanned interval
+    //std::cerr << "TRIMMING: " << std::endl << overlap.DebugString();
+    //std::cerr <<  "TO " << largest_interval.first << " " << largest_interval.second << std::endl;
+  //  trim_overlap_to_interval(&overlap, largest_interval.second, largest_interval.first,
+  //                           TerminationDirection::FROMTHELEFT);
+    //std::cerr << "AFTER LEFT " << std::endl << overlap.DebugString();
+  //  trim_overlap_to_interval(&overlap, largest_interval.second, largest_interval.first,
+  //                           TerminationDirection::FROMTHERIGHT);
+    //std::cerr << "AFTER RIGHT " << std::endl << overlap.DebugString();
+    
+    // Now we need to adjust the length of the 
+  //  overlap.set_length_1(interval_size);
+//  } 
+  //std::cerr << "After trimming to largest spanned interval: " << std::endl; 
+  //for(auto& overlap : *overlaps) {
+  //  std::cerr << overlap.DebugString() << std::endl;
+  //}
+  
+  //auto erase_itr = std::remove_if(overlaps->begin(), overlaps->end(),
+  //    [](proto::Overlap& overlap){return overlap.end_1() == overlap.start_1() ||
+  //                                       overlap.end_2() == overlap.start_2();});
+  //overlaps->erase(erase_itr, overlaps->end());
+
+  //std::cerr << "After removing: " << std::endl; 
+  //for(auto& overlap : *overlaps) {
+  //  std::cerr << overlap.DebugString() << std::endl;
+  //}
+  return output_read;
+}
 
 proto::Read trim_overlaps(std::vector<proto::Overlap>* overlaps,
                           int agglomeration_distance,
@@ -384,13 +493,26 @@ proto::Read trim_overlaps(std::vector<proto::Overlap>* overlaps,
                           int max_deception_length,
                           int min_coverage)
 {
-  
+  //std::cerr << "Before any trimming" << std::endl;
+  //std::cerr << overlap_debug_string(*overlaps, 120) << std::endl;
+
   // First, find the positions of overlap terminations 
   auto terminations_from_left = identify_terminating_overlaps(
       *overlaps, TerminationDirection::FROMTHELEFT);
   auto terminations_from_right = identify_terminating_overlaps(
       *overlaps, TerminationDirection::FROMTHERIGHT);
   
+//  std::cerr << "Terminations from the left:" << std::endl;
+//  for(auto term : terminations_from_left) {
+//    std::cerr << term << " ";
+//  }
+//  std::cerr << std::endl;
+//  std::cerr << "Terminations from the right:" << std::endl;
+//  for(auto term : terminations_from_right) {
+//    std::cerr << term << " ";
+//  }
+//  std::cerr << std::endl;
+
   // Second, combine those termination positions into intervals
   auto left_termination_intervals = create_termination_intervals(
       terminations_from_left, TerminationDirection::FROMTHELEFT,
@@ -399,25 +521,54 @@ proto::Read trim_overlaps(std::vector<proto::Overlap>* overlaps,
       terminations_from_right, TerminationDirection::FROMTHERIGHT,
       agglomeration_distance, termination_count_threshold);
   
+//  std::cerr << "Left termination intervals" << std::endl;
+//  for(auto ti : left_termination_intervals) {
+//    std::cerr << "(" << ti.start << ", " << ti.end << ") ";
+//  }
+//  std::cerr << std::endl; 
+//  std::cerr << "Right termination intervals" << std::endl;
+//  for(auto ti : right_termination_intervals) {
+//    std::cerr << "(" << ti.start << ", " << ti.end << ") ";
+//  }
+//  std::cerr << std::endl; 
   // Third, trim overlaps that end in a termination interval back to the start
   // of the interval
   trim_terminating_overlaps(overlaps, left_termination_intervals);
   trim_terminating_overlaps(overlaps, right_termination_intervals);
   
-  // TODO: Fourth, trim overlaps that extend just past a termination region to
+//  std::cerr << "After trimming terminating" << std::endl;
+//  std::cerr << overlap_debug_string(*overlaps, 120) << std::endl;
+  // Fourth, trim overlaps that extend just past a termination region to
   // the end of the partner read 
-  //trim_deceptive_overlaps(overlaps, left_termination_intervals);
-  //trim_deceptive_overlaps(overlaps, right_termination_intervals);
+  trim_deceptive_overlaps(overlaps, left_termination_intervals,
+                          max_deception_length);
+  trim_deceptive_overlaps(overlaps, right_termination_intervals,
+                          max_deception_length);
   
+//  std::cerr << "After trimming deceptive" << std::endl;
+//  std::cerr << overlap_debug_string(*overlaps, 120) << std::endl;
   // Fifth, find termination intervals with insufficient coverage
-  auto unspanned_intervals = find_unspanned_intervals(
-      left_termination_intervals, *overlaps, min_coverage);
-  auto unspanned_right_intervals = find_unspanned_intervals(
-      right_termination_intervals, *overlaps, min_coverage);
-  unspanned_intervals.insert(unspanned_intervals.end(),
-                             unspanned_right_intervals.begin(),
-                             unspanned_right_intervals.end());
+  auto all_termination_intervals = left_termination_intervals;
+  all_termination_intervals.insert(all_termination_intervals.end(),
+      right_termination_intervals.begin(), right_termination_intervals.end());
   
+//  std::cerr << "All termination intervals" << std::endl;
+//  for(auto ti : all_termination_intervals) {
+//    std::cerr << "(" << ti.start << ", " << ti.end << ") ";
+//  }
+//  std::cerr << std::endl; 
+
+  auto spanned_intervals = find_spanned_intervals(
+      all_termination_intervals, *overlaps, min_coverage);
+
+//  std::cerr << "Spanned intervals" << std::endl;
+//  for(auto ti : spanned_intervals) {
+//    std::cerr << "(" << ti.first << ", " << ti.second << ") ";
+//  }
+//  std::cerr << std::endl; 
+
   // Finally, trim the overlaps to the the good boundaries and return a read
   // object that contains the trimming information
+  proto::Read trimmed_read = trim_to_largest_spanned_interval(*overlaps, spanned_intervals);
+  return trimmed_read;
 }

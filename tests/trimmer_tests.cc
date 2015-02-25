@@ -185,7 +185,7 @@ TEST(TestTrimmer, TrimOverlapTest)
   ovl.set_start_2(0); ovl.set_end_2(50);
   ovl.set_forward(true);
   TerminationInterval ti{60, 80, TerminationDirection::FROMTHELEFT};
-  trim_overlap_to_interval(&ovl, ti, TerminationDirection::FROMTHELEFT);
+  trim_overlap_to_interval(&ovl, ti.start, ti.end, TerminationDirection::FROMTHELEFT);
 
   EXPECT_EQ(ovl.length_1(), 100); EXPECT_EQ(ovl.length_2(), 200);
   EXPECT_EQ(ovl.start_1(), 25); EXPECT_EQ(ovl.start_2(), 0);
@@ -199,7 +199,7 @@ TEST(TestTrimmer, TrimOverlapTest)
   ovl.set_start_2(0); ovl.set_end_2(50);
   ovl.set_forward(true);
   ti = TerminationInterval{20, 80, TerminationDirection::FROMTHELEFT};
-  trim_overlap_to_interval(&ovl, ti, TerminationDirection::FROMTHELEFT);
+  trim_overlap_to_interval(&ovl, ti.start, ti.end, TerminationDirection::FROMTHELEFT);
 
   EXPECT_EQ(ovl.length_1(), 100); EXPECT_EQ(ovl.length_2(), 200);
   EXPECT_EQ(ovl.start_1(), 25); EXPECT_EQ(ovl.start_2(), 0);
@@ -213,7 +213,7 @@ TEST(TestTrimmer, TrimOverlapTest)
   ovl.set_start_2(10); ovl.set_end_2(60);
   ovl.set_forward(false);
   ti = TerminationInterval{10, 36, TerminationDirection::FROMTHERIGHT};
-  trim_overlap_to_interval(&ovl, ti, TerminationDirection::FROMTHERIGHT);
+  trim_overlap_to_interval(&ovl, ti.start, ti.end, TerminationDirection::FROMTHERIGHT);
 
   EXPECT_EQ(ovl.length_1(), 100); EXPECT_EQ(ovl.length_2(), 200);
   EXPECT_EQ(ovl.start_1(), 35); EXPECT_EQ(ovl.start_2(), 10);
@@ -373,3 +373,141 @@ TEST_F(HoleInMiddleTest, TestTrimDeceptiveOverlaps)
   EXPECT_EQ(starts_at_810, 3);
 
 }
+
+TEST_F(HoleInMiddleTest, TestSpannedIntervals)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+  trim_deceptive_overlaps(&ovls, left_intervals, 50);
+  trim_deceptive_overlaps(&ovls, right_intervals, 50);
+  
+  auto all_intervals = left_intervals;
+  all_intervals.insert(all_intervals.end(), right_intervals.begin(), right_intervals.end());
+  auto spanned_intervals = find_spanned_intervals(all_intervals, ovls, 1);
+  auto expected_spanned_intervals = decltype(spanned_intervals){std::make_pair(0, 590), std::make_pair(811, 1000)};
+
+  EXPECT_EQ(spanned_intervals, expected_spanned_intervals);
+}
+
+TEST_F(HoleInMiddleTest, TestTrimToLargestInterval)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+  trim_deceptive_overlaps(&ovls, left_intervals, 50);
+  trim_deceptive_overlaps(&ovls, right_intervals, 50);
+  
+  auto all_intervals = left_intervals;
+  all_intervals.insert(all_intervals.end(), right_intervals.begin(), right_intervals.end());
+  auto spanned_intervals = find_spanned_intervals(all_intervals, ovls, 1);
+
+  auto read = trim_to_largest_spanned_interval(&ovls, spanned_intervals);
+  
+  EXPECT_EQ(read.untrimmed_length(), 1000);
+
+  // TODO: Test that any empty overlaps are removed   
+  EXPECT_EQ(ovls.size(), 11);
+  
+  EXPECT_EQ(read.trimmed_start(), 0);
+  EXPECT_EQ(read.trimmed_end(), 590);
+  EXPECT_EQ(read.untrimmed_length(), 1000);
+}
+
+// A read with nice overlaps that shouldn't be trimmed at all
+class NiceLookingReadTest : public ::testing::Test
+{
+  // \>>>>>>>>>
+  // \>>>>>>>>>>>>>>>>>>>>>
+  // \<<<<<<<<<<<<<<<<<<<<<<<<
+  // \<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<</
+  // \>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>/
+  //            <<<<<<<<<<<
+  //                  >>>>>>>>>>>>>>>>>/
+  //                     <<<<<<<<<<<<<</
+  //                         <<<<<<<<<</
+  // ***********************************
+public:
+  std::vector<proto::Overlap> ovls;
+
+  virtual void SetUp()
+  {
+    proto::Overlap ovl;
+    ovl.set_length_1(1000);
+    ovl.set_length_2(2000);
+
+    ovl.set_start_1(0); ovl.set_end_1(250); ovl.set_start_2(1750); ovl.set_end_2(2000); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(0); ovl.set_end_1(600); ovl.set_start_2(1400); ovl.set_end_2(2000); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(0); ovl.set_end_1(650); ovl.set_start_2(0); ovl.set_end_2(650); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(0); ovl.set_end_1(1000); ovl.set_start_2(500); ovl.set_end_2(1500); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(0); ovl.set_end_1(1000); ovl.set_start_2(200); ovl.set_end_2(1200); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(300); ovl.set_end_1(660); ovl.set_start_2(0); ovl.set_end_2(360); ovl.set_length_2(360); ovl.set_forward(false);
+    ovls.push_back(ovl); ovl.set_length_2(2000);
+    ovl.set_start_1(500); ovl.set_end_1(1000); ovl.set_start_2(0); ovl.set_end_2(500); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(600); ovl.set_end_1(1000); ovl.set_start_2(1400); ovl.set_end_2(2000); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(600); ovl.set_end_1(1000); ovl.set_start_2(1600); ovl.set_end_2(2000); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(800); ovl.set_end_1(1000); ovl.set_start_2(1800); ovl.set_end_2(2000); ovl.set_forward(false);
+    ovls.push_back(ovl);
+  }
+};
+
+// This is a pattern that appears a lot. There's a region that's spanned nicely
+// by overlaps, but then there's one end with some bad looking overlaps that
+// should get trimmed off.
+class NiceWithSomeGarbageTest : public ::testing::Test
+{
+  // \>>>>>>>>>
+  // \<<<<<<<<<<<
+  //       <<<<<<<<<<<</
+  //          >>>>>>>>>/
+  //                       \<<<<<</
+  //                       \<<<<<</
+  //                       \>>>>>>/
+  //                       \>>>>>>/
+  // ***********************************
+public:
+  std::vector<proto::Overlap> ovls;
+
+  virtual void SetUp()
+  {
+    proto::Overlap ovl;
+    ovl.set_length_1(500);
+    ovl.set_length_1(500);
+
+    ovl.set_start_1(0); ovl.set_end_1(200); ovl.set_start_2(300); ovl.set_end_2(500); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(0); ovl.set_end_1(220); ovl.set_start_2(0); ovl.set_end_2(220); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(150); ovl.set_end_1(350); ovl.set_start_2(300); ovl.set_end_2(500); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(210); ovl.set_end_1(350); ovl.set_start_2(0); ovl.set_end_2(140); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(420); ovl.set_end_1(460); ovl.set_start_2(100); ovl.set_end_2(140); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(420); ovl.set_end_1(460); ovl.set_start_2(200); ovl.set_end_2(240); ovl.set_forward(false);
+    ovls.push_back(ovl);
+    ovl.set_start_1(420); ovl.set_end_1(460); ovl.set_start_2(50); ovl.set_end_2(90); ovl.set_forward(true);
+    ovls.push_back(ovl);
+    ovl.set_start_1(420); ovl.set_end_1(460); ovl.set_start_2(350); ovl.set_end_2(390); ovl.set_forward(true);
+    ovls.push_back(ovl);
+  }
+};
+
