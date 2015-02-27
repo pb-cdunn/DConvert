@@ -67,6 +67,7 @@ void trim_overlap(proto::Overlap* overlap,
                   std::pair<int, int> bounds_1,
                   std::pair<int, int> bounds_2)
 {
+  float pretrim_length = overlap->end_1() - overlap->start_1();
   // First figure out how much to adjust the overlap to the left
   int left_adjustment_1 = 0;
   int left_adjustment_2 = 0;
@@ -113,6 +114,9 @@ void trim_overlap(proto::Overlap* overlap,
   // Finally, set the read lengths for each read in the overlap pair
   overlap->set_length_1(bounds_1.second - bounds_1.first);
   overlap->set_length_2(bounds_2.second - bounds_2.first);
+  
+  float posttrim_length = overlap->end_1() - overlap->start_1();
+  overlap->set_diffs(overlap->diffs() * posttrim_length / pretrim_length);
 }
 
 int main(int argc, char* argv[])
@@ -186,7 +190,8 @@ int main(int argc, char* argv[])
     trimmed_read_boundaries.emplace_back(std::make_pair(trimmed_read.trimmed_start(),
                                                         trimmed_read.trimmed_end()));
   } 
-
+  
+  std::cerr << "Read " << trimmed_read_boundaries.size() << " read bounds." << std::endl;
   proto::Overlap overlap;
 
   while(coded_overlap_input->ReadVarint32(&record_size)) {
@@ -199,7 +204,7 @@ int main(int argc, char* argv[])
     overlap.ParseFromArray(buffer, record_size);    
     
     std::cerr << "*******************" << std::endl;
-    std::cerr << overlap.DebugString() << std::endl;   
+    std::cerr << overlap.DebugString() << std::endl;
     auto bounds_1 = trimmed_read_boundaries.at(overlap.id_1() - 1);
     auto bounds_2 = trimmed_read_boundaries.at(overlap.id_2() - 1);
     
