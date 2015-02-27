@@ -106,7 +106,7 @@ TEST(TestTrimmer, ExtendsToEndTest)
   ovl.set_forward(true);
 
   EXPECT_TRUE(extends_to_end(ovl, TerminationDirection::FROMTHELEFT));
-  EXPECT_FALSE(extends_to_end(ovl, TerminationDirection::FROMTHERIGHT));
+  EXPECT_TRUE(extends_to_end(ovl, TerminationDirection::FROMTHERIGHT));
 
   // \>>>>>>>/            2
   // ***************      1
@@ -119,7 +119,7 @@ TEST(TestTrimmer, ExtendsToEndTest)
   ovl.set_forward(true);
 
   EXPECT_FALSE(extends_to_end(ovl, TerminationDirection::FROMTHELEFT));
-  EXPECT_FALSE(extends_to_end(ovl, TerminationDirection::FROMTHERIGHT));
+  EXPECT_TRUE(extends_to_end(ovl, TerminationDirection::FROMTHERIGHT));
 
   //    \<<<<<</          2
   // ***************      1
@@ -412,12 +412,9 @@ TEST_F(HoleInMiddleTest, TestTrimToLargestInterval)
   all_intervals.insert(all_intervals.end(), right_intervals.begin(), right_intervals.end());
   auto spanned_intervals = find_spanned_intervals(all_intervals, ovls, 1);
 
-  auto read = trim_to_largest_spanned_interval(&ovls, spanned_intervals);
+  auto read = trim_to_largest_spanned_interval(ovls, spanned_intervals);
   
   EXPECT_EQ(read.untrimmed_length(), 1000);
-
-  // TODO: Test that any empty overlaps are removed   
-  EXPECT_EQ(ovls.size(), 11);
   
   EXPECT_EQ(read.trimmed_start(), 0);
   EXPECT_EQ(read.trimmed_end(), 590);
