@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <iostream>
+
 OVBWriter::OVBWriter(std::string ovb_name)
 {
   char* c_ovb_name = (char*)malloc(ovb_name.size() * sizeof(char));
@@ -15,23 +17,6 @@ OVBWriter::OVBWriter(std::string ovb_name)
 OVBWriter::~OVBWriter()
 {
   AS_OVS_closeBinaryOverlapFile(m_output_file);
-}
-
-void trim_back_overlap_ends(proto::Overlap* overlap)
-{
-  bool touches_left  = overlap->start_1() == 0 || overlap->start_2() == 0;
-  bool touches_right = overlap->end_1() == overlap->length_1() ||
-                       overlap->end_2() == overlap->length_2();
-  int clip_size = 25;
-  if(touches_left) {
-    overlap->set_start_1(overlap->start_1() + clip_size);
-    overlap->set_start_2(overlap->start_2() + clip_size);
-  }
-
-  if(touches_right) {
-    overlap->set_end_1(overlap->end_1() - clip_size);
-    overlap->set_end_2(overlap->end_2() - clip_size);
-  }
 }
 
 // DALIGNER seems to report multiple, overlapping alignments in the same
@@ -91,7 +76,7 @@ void create_obt_overlap(OVSoverlap* celera_ovl, const proto::Overlap& overlap)
   }
   
   celera_ovl->dat.obt.erate = static_cast<double>(overlap.diffs())/(overlap.end_1() - overlap.start_1())
-                                                  * 10000;
+                                                  * 10000.0;
   celera_ovl->dat.obt.type = AS_OVS_TYPE_OBT;
 }
 
@@ -131,6 +116,10 @@ void create_ovl_overlap(OVSoverlap* celera_ovl, const proto::Overlap& overlap)
   
   celera_ovl->dat.ovl.orig_erate = static_cast<double>(overlap.diffs())/(overlap.end_1() - overlap.start_1()) * 10000;
   celera_ovl->dat.ovl.corr_erate = static_cast<double>(overlap.diffs())/(overlap.end_1() - overlap.start_1()) * 10000;
+
+  if(celera_ovl->dat.ovl.orig_erate > 1000) {
+    std::cerr << "WARNING: Very high erate for overlap " << overlap.DebugString() << std::endl;
+  }
   celera_ovl->dat.ovl.seed_value = 0; // whatever
   celera_ovl->dat.ovl.type = AS_OVS_TYPE_OVL;
 }
@@ -169,15 +158,15 @@ void unique_write(BinaryOverlapFile* output_file,
                   
 void OBTWriter::write_overlap(const proto::Overlap& overlap)
 {
-  //proto::Overlap overlap_copy(overlap);
-  //trim_back_overlap_ends(&overlap_copy);
   unique_write(m_output_file, &m_cached_overlap, create_obt_overlap, overlap);
 }
 
 void OVLWriter::write_overlap(const proto::Overlap& overlap)
 {
-  if(is_full_overlap(overlap))
-    write_to_ovb(m_output_file, overlap, create_ovl_overlap);
+//  if(is_full_overlap(overlap))
+//    write_to_ovb(m_output_file, overlap, create_ovl_overlap);
+    if(is_full_overlap(overlap))
+      unique_write(m_output_file, &m_cached_overlap, create_ovl_overlap, overlap);
 }
 
 // OBTWriter needs to write the last cached read before closing the file.
