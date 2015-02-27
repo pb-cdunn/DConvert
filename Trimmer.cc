@@ -127,12 +127,14 @@ bool terminates_from_right(const proto::Overlap& overlap)
 bool extends_to_end(const proto::Overlap& overlap, TerminationDirection direction)
 {
   if(direction == TerminationDirection::FROMTHERIGHT) {
+    if(overlap.start_1() == 0) return true;
     if(overlap.forward()) {
       return overlap.start_2() == 0;
     } else {
       return overlap.end_2() == overlap.length_2();
     }
   } else if(direction == TerminationDirection::FROMTHELEFT) {
+    if(overlap.end_1() == overlap.length_1()) return true;
     if(overlap.forward()) {
       return overlap.end_2() == overlap.length_2();
     } else {
@@ -285,8 +287,9 @@ void trim_terminating_overlaps(
   }
 
   // Sort the overlaps by their relevant position in the query read 
+  std::cerr << "Sorting " << overlaps->size() << " overlaps." << std::endl;
   std::sort(overlaps->begin(), overlaps->end(),
-            [business_end](proto::Overlap a, proto::Overlap b)
+            [&business_end](const proto::Overlap& a, const proto::Overlap& b)
               {return (a.*business_end)() < (b.*business_end)();});
   
   // Now iterate over the overlaps, trimming them when necessary
@@ -321,12 +324,14 @@ void trim_deceptive_overlaps(std::vector<proto::Overlap>* overlaps,
   auto direction = termination_intervals[0].direction;
 
   if(direction == TerminationDirection::FROMTHELEFT) {
+    std::cerr << "Sorting " << overlaps->size() << " overlaps." << std::endl;
     std::sort(overlaps->begin(), overlaps->end(),
-              [](proto::Overlap a, proto::Overlap b)
+              [](const proto::Overlap& a, const proto::Overlap& b)
                 {return a.end_1() < b.end_1();});
   } else {
+    std::cerr << "Sorting " << overlaps->size() << " overlaps." << std::endl;
     std::sort(overlaps->begin(), overlaps->end(),
-              [](proto::Overlap a, proto::Overlap b)
+              [](const proto::Overlap& a, const proto::Overlap& b)
                 {return a.start_1() < b.start_1();});
   }
 
@@ -363,11 +368,22 @@ void trim_deceptive_overlaps(std::vector<proto::Overlap>* overlaps,
 bool is_spanned(int start, int end, int min_coverage, 
                 const std::vector<proto::Overlap>& overlaps)
 {
-  int coverage_counter = 0;
+  int coverage_counter_1 = 0;
+  int coverage_counter_2 = 0;
+  //for(auto& overlap : overlaps) {
+  //  if(overlap.start_1() <= start && end <= overlap.end_1())
+  //    ++coverage_counter;
+  //    if(coverage_counter >= min_coverage) return true;
+  //}
+  int point_1 = start + 1;
+  int point_2 = end - 1;
+ // std::cerr << "Checking points " << point_1 << " " << point_2 << std::endl;
   for(auto& overlap : overlaps) {
-    if(overlap.start_1() <= start && end <= overlap.end_1())
-      ++coverage_counter;
-      if(coverage_counter >= min_coverage) return true;
+    if(overlap.start_1() <= point_1 && point_1 <= overlap.end_1())
+      ++coverage_counter_1;
+    if(overlap.start_1() <= point_2 && point_2 <= overlap.end_1())
+      ++coverage_counter_2;
+    if(coverage_counter_1 >= min_coverage && coverage_counter_2 >> min_coverage) return true;
   }
   return false;
 }
@@ -502,16 +518,16 @@ proto::Read trim_overlaps(std::vector<proto::Overlap>* overlaps,
   auto terminations_from_right = identify_terminating_overlaps(
       *overlaps, TerminationDirection::FROMTHERIGHT);
   
-//  std::cerr << "Terminations from the left:" << std::endl;
-//  for(auto term : terminations_from_left) {
-//    std::cerr << term << " ";
-//  }
-//  std::cerr << std::endl;
-//  std::cerr << "Terminations from the right:" << std::endl;
-//  for(auto term : terminations_from_right) {
-//    std::cerr << term << " ";
-//  }
-//  std::cerr << std::endl;
+  //std::cerr << "Terminations from the left:" << std::endl;
+  //for(auto term : terminations_from_left) {
+  //  std::cerr << term << " ";
+  //}
+  //std::cerr << std::endl;
+  //std::cerr << "Terminations from the right:" << std::endl;
+  //for(auto term : terminations_from_right) {
+  //  std::cerr << term << " ";
+  //}
+  //std::cerr << std::endl;
 
   // Second, combine those termination positions into intervals
   auto left_termination_intervals = create_termination_intervals(
