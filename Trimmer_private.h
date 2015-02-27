@@ -43,7 +43,7 @@ std::vector<std::pair<int, int>> find_spanned_intervals(
       int min_coverage);
 
 proto::Read trim_to_largest_spanned_interval(
-    std::vector<proto::Overlap>* overlaps,
+    const std::vector<proto::Overlap>& overlaps,
     const std::vector<std::pair<int, int>>& spanned_intervals);
 
 #endif
