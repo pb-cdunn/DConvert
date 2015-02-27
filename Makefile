@@ -36,7 +36,7 @@ PROTO_SRCS=$(patsubst %.proto,%.pb.cc,$(PROTOS))
 PROTO_HS=$(patsubst %.proto,%.pb.h,$(PROTOS))
 
 %.pb.cc: %.proto
-	~/local/bin/protoc --cpp_out=$(dir $<) $<
+	~/local/bin/protoc --cpp_out=$(dir $<) --python_out=$(dir $<) $<
 
 # Source files that need Celera Assembler
 CELERA_DEPENDENT_SRCS= OVBWriter.cc
@@ -44,7 +44,7 @@ CELERA_DEPENDENT_SRCS= OVBWriter.cc
 CELERA_INDEPENDENT_SRCS= LASReader.cc dalign/DB.cc dalign/QV.cc dalign/align.cc Trimmer.cc OverlapPrinter.cc
 CELERA_INDEPENDENT_SRCS+=$(PROTO_SRCS)
 
-EXE_SRCS=read_from_las.cc write_to_ovb.cc trim_reads.cc trim_overlaps.cc apply_trimming_to_gkp.cc
+EXE_SRCS=read_from_las.cc write_to_ovb.cc trim_reads.cc trim_overlaps.cc apply_trimming_to_gkp.cc las_to_ovb.cc
 EXE_OBJS=$(patsubst %.cc,%.o,$(EXE_SRCS))
 EXES=$(patsubst %.o,%,$(EXE_OBJS))
 
@@ -59,6 +59,9 @@ celera_assembler:
 	$(MAKE) -C celera_assembler
 
 $(EXE_OBJS): CXXFLAGS+=$(CELERA_CXXFLAGS)
+
+las_to_ovb: $(CELERA_INDEPENDENT_OBJS) $(CELERA_DEPENDENT_OBJS) las_to_ovb.o
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(CELERA_LDFLAGS)
 
 write_to_ovb: $(CELERA_INDEPENDENT_OBJS) $(CELERA_DEPENDENT_OBJS) write_to_ovb.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(CELERA_LDFLAGS)
