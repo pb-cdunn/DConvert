@@ -27,3 +27,8 @@
 *.exe
 *.out
 *.app
+
+# protobug files
+*.pb.h
+*.pb.cc
+*_pb2.py
