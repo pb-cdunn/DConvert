@@ -80,7 +80,7 @@ apply_trimming_to_gkp: $(CELERA_INDEPENDENT_OBJS) apply_trimming_to_gkp.o
 
 $(CELERA_DEPENDENT_OBJS): CXXFLAGS+=$(CELERA_CXXFLAGS)
 ## Turn this off for now so we don't have to keep verifying that CA has been made
-#$(CELERA_DEPENDENT_OBJS): celera_assembler
+$(CELERA_DEPENDENT_OBJS): celera_assembler
 
 $(CELERA_INDEPENDENT_OBJS): $(PROTO_SRCS)
 
