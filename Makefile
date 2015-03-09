@@ -30,13 +30,19 @@ CXXFLAGS+= -Wno-literal-suffix
 
 LDFLAGS=-L/home/UNIXHOME/mkinsella/local/lib -lprotobuf
 
+ifeq ($(TRAVIS),true)
+	PROTOC_EXE=protoc
+else
+	PROTOC_EXE=~/local/bin/protoc
+endif
+
 # The protocol buffer files and how to make them
 PROTOS=$(wildcard *.proto)
 PROTO_SRCS=$(patsubst %.proto,%.pb.cc,$(PROTOS))
 PROTO_HS=$(patsubst %.proto,%.pb.h,$(PROTOS))
 
 %.pb.cc: %.proto
-	~/local/bin/protoc --cpp_out=$(dir $<) --python_out=$(dir $<) $<
+	$(PROTOC_EXE) --cpp_out=$(dir $<) --python_out=$(dir $<) $<
 
 # Source files that need Celera Assembler
 CELERA_DEPENDENT_SRCS= OVBWriter.cc
