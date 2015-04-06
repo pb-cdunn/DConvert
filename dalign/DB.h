@@ -54,7 +54,6 @@
 #define _HITS_DB
 
 #include <stdio.h>
-#include <stdint.h>
 
 #include "QV.h"
 
@@ -63,20 +62,17 @@ namespace dalign {
 typedef unsigned char      uint8;
 typedef unsigned short     uint16;
 typedef unsigned int       uint32;
-typedef uint64_t           uint64;
+typedef unsigned long long uint64;
 typedef signed char        int8;
 typedef signed short       int16;
 typedef signed int         int32;
-typedef int64_t            int64;
+typedef signed long long   int64;
 typedef float              float32;
 typedef double             float64;
 
 #define HIDE_FILES          //  Auxiliary DB files start with a . so they are "hidden"
                             //    Undefine if you don't want this
 
-#define READMAX  65535      //  Maximum # of reads in a DB partition block
-
-typedef uint16   READIDX;   //  Reads can be no longer than 2^16
 
 /*******************************************************************************************
  *
@@ -86,7 +82,10 @@ typedef uint16   READIDX;   //  Reads can be no longer than 2^16
 
 extern char *Prog_Name;   //  Name of program
 
-#define SYSTEM_ERROR { fprintf(stderr, "SYSTEM_ERROR at %s:%d\n", __FILE__, __LINE__); exit(2);}
+#define SYSTEM_ERROR							\
+  { fprintf(stderr,"%s: System error, read failed!\n",Prog_Name);	\
+    exit (2);								\
+  }
 
 #define ARG_INIT(name)                  \
   Prog_Name = Strdup(name,"");          \
@@ -158,6 +157,7 @@ char *Numbered_Suffix(char *left, int num, char *right);
 // DB-related utilities
 
 void Print_Number(int64 num, int width, FILE *out);   //  Print readable big integer
+int  Number_Digits(int64 num);                        //  Return # of digits in printed number
 
 #define COMPRESSED_LEN(len)  (((len)+3) >> 2)
 
@@ -182,8 +182,8 @@ void Number_Read(char *s);    //  Convert read from letters to numbers
 
 typedef struct
   { int     origin; //  Well #
-    READIDX beg;    //  First pulse
-    READIDX end;    //  Last pulse
+    int     rlen;   //  Length of the sequence (Last pulse = fpulse + rlen)
+    int     fpulse; //  First pulse
     int64   boff;   //  Offset (in bytes) of compressed read in 'bases' file, or offset of
                     //    uncompressed bases in memory block
     int64   coff;   //  Offset (in bytes) of compressed quiva streams in 'quiva' file
@@ -262,7 +262,7 @@ typedef struct
 #define DB_NFILE  "files = %9d\n"   //  number of files
 #define DB_FDATA  "  %9d %s %s\n"   //  last read index + 1, fasta prolog, file name
 #define DB_NBLOCK "blocks = %9d\n"  //  number of blocks
-#define DB_PARAMS "size = %9ld cutoff = %9d all = %1d\n"  //  block size, len cutoff, all in well
+#define DB_PARAMS "size = %9lld cutoff = %9d all = %1d\n"  //  block size, len cutoff, all in well
 #define DB_BDATA  " %9d %9d\n"      //  First read index (untrimmed), first read index (trimmed)
 
 
@@ -276,10 +276,20 @@ typedef struct
   //    .DB.qvs, and files .DB.<track>.anno and DB.<track>.data where <track> is a track name
   //    (not containing a . !).
 
-  // Open the given database "path" into the supplied HITS_DB record "db", return nonzero
-  //   if the file could not be opened for any reason.  If the name has a part # in it then
-  //   just the part is opened.  The index array is allocated (for all or just the part) and
-  //   read in.
+  // A DAM is basically a DB except that:
+  //    1. there are no QV's, instead .coff points the '\0' terminated fasta header of the read
+  //          in the file .<dam>.hdr file
+  //    2. .origin contains the contig # of the read within a fasta entry (assembly sequences
+  //          contain N-separated contigs), and .fpulse the first base ofn the contig in the
+  //          fasta entry
+
+  // Open the given database or dam, "path" into the supplied HITS_DB record "db". If the name has
+  //   a part # in it then just the part is opened.  The index array is allocated (for all or
+  //   just the part) and read in.
+  // Return status of routine:
+  //    -1: The DB could not be opened for a reason reported by the routine to stderr
+  //     0: Open of DB proceeded without mishap
+  //     1: Open of DAM proceeded without mishap
 
 int Open_DB(char *path, HITS_DB *db);
 
@@ -304,6 +314,14 @@ void Load_QVs(HITS_DB *db);
 
 void Close_QVs(HITS_DB *db);
 
+  // Look up the file and header in the file of the indicated track.  Return:
+  //     1: Track is for trimmed DB
+  //     0: Track is for untrimmed DB
+  //    -1: Track is not the right size of DB either trimmed or untrimmed
+  //    -2: Could not find the track
+
+int Check_Track(HITS_DB *db, char *track);
+
   // If track is not already in the db's track list, then allocate all the storage for it,
   //   read it in from the appropriate file, add it to the track list, and return a pointer
   //   to the newly created HITS_TRACK record.  If the track does not exist or cannot be
@@ -327,7 +345,15 @@ char *New_Read_Buffer(HITS_DB *db);
   //   otherwise.  A '\0' (or 4) is prepended and appended to the string so it has a delimeter
   //   for traversals in either direction.
 
-void Load_Read(HITS_DB *db, int i, char *read, int ascii);
+void  Load_Read(HITS_DB *db, int i, char *read, int ascii);
+
+  // Load into 'read' the subread [beg,end] of the i'th read in 'db' and return a pointer to the
+  //   the start of the subinterval (not necessarily = to read !!! ).  As a lower case ascii
+  //   string if ascii is 1, an upper case ascii string if ascii is 2, and a numeric string
+  //   over 0(A), 1(C), 2(G), and 3(T) otherwise.  A '\0' (or 4) is prepended and appended to
+  //   the string holding the substring so it has a delimeter for traversals in either direction.
+
+char *Load_Subread(HITS_DB *db, int i, int beg, int end, char *read, int ascii);
 
   // Allocate a set of 5 vectors large enough to hold the longest QV stream that will occur
   //   in the database.  
@@ -353,8 +379,8 @@ void   Load_QVentry(HITS_DB *db, int i, char **entry, int ascii);
 
 void Read_All_Sequences(HITS_DB *db, int ascii);
 
-  // For the DB "path" = "prefix/root[.db]", find all the files for that DB, i.e. all those
-  //   of the form "prefix/[.]root.part" and call foreach with the complete path to each file
+  // For the DB or DAM "path" = "prefix/root[.db|.dam]", find all the files for that DB, i.e. all
+  //   those of the form "prefix/[.]root.part" and call foreach with the complete path to each file
   //   pointed at by path, and the suffix of the path by extension.  The . proceeds the root
   //   name if the defined constant HIDE_FILES is set.  Always the first call is with the
   //   path "prefix/root.db" and extension "db".  There will always be calls for
@@ -364,6 +390,6 @@ void Read_All_Sequences(HITS_DB *db, int ascii);
 
 int List_DB_Files(char *path, void foreach(char *path, char *extension));
 
-}
+} // namespace dalign
 
 #endif // _HITS_DB
