@@ -20,4 +20,4 @@ install:
 
 script:
     - make && make test
-    - ./test/trimmer_tests
+    - ./tests/trimmer_tests
