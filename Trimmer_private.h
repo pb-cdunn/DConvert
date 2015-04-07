@@ -20,11 +20,11 @@ bool extends_to_end(const proto::Overlap& overlap, TerminationDirection directio
 void trim_overlap_to_interval(proto::Overlap* overlap, int start, int end,
                               TerminationDirection direction);
 
-std::vector<int> identify_terminating_overlaps(const std::vector<proto::Overlap>& overlaps,
+std::map<int, int> identify_terminating_overlaps(const std::vector<proto::Overlap>& overlaps,
                                                TerminationDirection direction);
 
 std::vector<TerminationInterval> create_termination_intervals(
-      const std::vector<int>& termination_positions,
+      const std::map<int, int>& termination_positions,
       TerminationDirection direction,
       int agglomeration_distance,
       int termination_count_threshold);
