@@ -9,7 +9,7 @@
 
 int main(int argc, char* argv[])
 {
-  std::string las_name, ovb_name, ovb_style;
+  std::string las_name, ovb_name, ovb_style, db_name;
 
   int arg = 1;
   while(arg < argc) {
@@ -22,11 +22,14 @@ int main(int argc, char* argv[])
     if(strcmp(argv[arg], "-S") == 0) {
       ovb_style = std::string(argv[++arg]);
     }
+    if(strcmp(argv[arg], "-D") == 0) {
+      db_name = std::string(argv[++arg]);
+    }
     arg++;
   }
   
   if(las_name.size() == 0 || ovb_name.size() == 0) {
-    std::cerr << "Usage: las_to_ovb -L <las_name> -O <ovb_name> ";
+    std::cerr << "Usage: las_to_ovb -L <las_name> -O <ovb_name> -D <db_name> ";
     std::cerr << "-S <style: obt or ovl>" << std::endl;
     exit(1);
   }
@@ -42,7 +45,7 @@ int main(int argc, char* argv[])
   }
 
 
-  LASReader las_reader(las_name);
+  LASReader las_reader(las_name, db_name);
   proto::Overlap overlap;
 
   while(las_reader.next_overlap(&overlap)) {
