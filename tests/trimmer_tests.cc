@@ -283,18 +283,17 @@ TEST_F(HoleInMiddleTest, TestTerminationIdentification)
   auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
   auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
   
-  EXPECT_EQ(from_the_left.size(), 8);
-  EXPECT_EQ(from_the_right.size(), 2);
+  decltype(from_the_left) expected_left = {std::make_pair(250, 4),
+                                           std::make_pair(255, 1),
+                                           std::make_pair(590, 1),
+                                           std::make_pair(600, 1),
+                                           std::make_pair(610, 1)};
 
-  std::sort(from_the_left.begin(), from_the_left.end());
-  decltype(from_the_left) expected_left = {250, 250, 250, 250,
-                                           255, 590, 600, 610};
   EXPECT_EQ(from_the_left, expected_left);
 
-  std::sort(from_the_right.begin(), from_the_right.end());
-  decltype(from_the_right) expected_right = {800, 810};
+  decltype(from_the_right) expected_right = {std::make_pair(800, 1),
+                                             std::make_pair(810, 1)};
   EXPECT_EQ(from_the_right, expected_right);
-
 }
 
 TEST_F(HoleInMiddleTest, TestTerminationIntervals)
@@ -466,6 +465,57 @@ public:
   }
 };
 
+TEST_F(NiceLookingReadTest, TestTerminationIdentification)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  
+  EXPECT_EQ(from_the_left.size(), 0);
+  EXPECT_EQ(from_the_right.size(), 0);
+}
+
+TEST_F(NiceLookingReadTest, TestTerminationIntervals)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+
+
+  auto left_agg25_thresh_1 = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                          25, 1);
+  EXPECT_EQ(left_agg25_thresh_1.size(), 0);
+
+  auto right_agg25_thresh_1 = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                           25, 1);
+  EXPECT_EQ(right_agg25_thresh_1.size(), 0);
+
+  auto left_agg5_thresh_2 = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                         5, 2);
+  EXPECT_EQ(left_agg5_thresh_2.size(), 0);
+}
+
+TEST_F(NiceLookingReadTest, TestTrimToLargestInterval)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+  trim_deceptive_overlaps(&ovls, left_intervals, 50);
+  trim_deceptive_overlaps(&ovls, right_intervals, 50);
+  
+  auto all_intervals = left_intervals;
+  all_intervals.insert(all_intervals.end(), right_intervals.begin(), right_intervals.end());
+  auto spanned_intervals = find_spanned_intervals(all_intervals, ovls, 1);
+
+  auto read = trim_to_largest_spanned_interval(ovls, spanned_intervals);
+  
+  EXPECT_EQ(read.trimmed_start(), 0);
+  EXPECT_EQ(read.trimmed_end(), 1000);
+  EXPECT_EQ(read.untrimmed_length(), 1000);
+}
 // This is a pattern that appears a lot. There's a region that's spanned nicely
 // by overlaps, but then there's one end with some bad looking overlaps that
 // should get trimmed off.
@@ -487,7 +537,7 @@ public:
   {
     proto::Overlap ovl;
     ovl.set_length_1(500);
-    ovl.set_length_1(500);
+    ovl.set_length_2(500);
 
     ovl.set_start_1(0); ovl.set_end_1(200); ovl.set_start_2(300); ovl.set_end_2(500); ovl.set_forward(true);
     ovls.push_back(ovl);
@@ -508,3 +558,106 @@ public:
   }
 };
 
+TEST_F(NiceWithSomeGarbageTest, TestTerminationIdentification)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  
+  decltype(from_the_left) expected_left = {std::make_pair(350, 2),
+                                           std::make_pair(460, 4)};
+  EXPECT_EQ(from_the_left, expected_left);
+
+  decltype(from_the_right) expected_right = {std::make_pair(420, 4)};
+
+  EXPECT_EQ(from_the_right, expected_right);
+}
+
+TEST_F(NiceWithSomeGarbageTest, TestTerminationIntervals)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+
+
+  auto left_agg25_thresh_1 = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                          25, 1);
+  decltype(left_agg25_thresh_1) expected_left_agg25_thresh_1 = {
+    TerminationInterval{350, 351, TerminationDirection::FROMTHELEFT},
+    TerminationInterval{460, 461, TerminationDirection::FROMTHELEFT}};
+
+  EXPECT_EQ(left_agg25_thresh_1, expected_left_agg25_thresh_1);
+
+  auto right_agg25_thresh_1 = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                           25, 1);
+  decltype(right_agg25_thresh_1) expected_right_agg25_thresh_1 = {
+    TerminationInterval{420, 421, TerminationDirection::FROMTHERIGHT}};
+  EXPECT_EQ(right_agg25_thresh_1, expected_right_agg25_thresh_1);
+}
+
+TEST_F(NiceWithSomeGarbageTest, TestTrimTerminatingOverlaps)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+
+  auto ends_at_350 = std::count_if(ovls.begin(), ovls.end(),
+                                    [](proto::Overlap o){return o.end_1() == 350;});
+  EXPECT_EQ(ends_at_350, 2);
+
+  auto ends_at_460 = std::count_if(ovls.begin(), ovls.end(), [](proto::Overlap o){return o.end_1() == 460;});
+  EXPECT_EQ(ends_at_460, 4);
+  
+  auto starts_at_420 = std::count_if(ovls.begin(), ovls.end(), [](proto::Overlap o){return o.start_1() == 420;});
+  EXPECT_EQ(starts_at_420, 4);
+}
+
+TEST_F(NiceWithSomeGarbageTest, TestSpannedIntervals)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+  trim_deceptive_overlaps(&ovls, left_intervals, 50);
+  trim_deceptive_overlaps(&ovls, right_intervals, 50);
+  
+  auto all_intervals = left_intervals;
+  all_intervals.insert(all_intervals.end(), right_intervals.begin(), right_intervals.end());
+  auto spanned_intervals = find_spanned_intervals(all_intervals, ovls, 1);
+  auto expected_spanned_intervals = decltype(spanned_intervals){std::make_pair(0, 350), std::make_pair(421, 460)};
+
+  EXPECT_EQ(spanned_intervals, expected_spanned_intervals);
+}
+
+TEST_F(NiceWithSomeGarbageTest, TestTrimToLargestInterval)
+{
+  auto from_the_left = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHELEFT);
+  auto from_the_right = identify_terminating_overlaps(ovls, TerminationDirection::FROMTHERIGHT);
+  auto left_intervals = create_termination_intervals(from_the_left, TerminationDirection::FROMTHELEFT,
+                                                     25, 1);
+  auto right_intervals = create_termination_intervals(from_the_right, TerminationDirection::FROMTHERIGHT,
+                                                      25, 1);
+  trim_terminating_overlaps(&ovls, left_intervals);
+  trim_terminating_overlaps(&ovls, right_intervals);
+  trim_deceptive_overlaps(&ovls, left_intervals, 50);
+  trim_deceptive_overlaps(&ovls, right_intervals, 50);
+  
+  auto all_intervals = left_intervals;
+  all_intervals.insert(all_intervals.end(), right_intervals.begin(), right_intervals.end());
+  auto spanned_intervals = find_spanned_intervals(all_intervals, ovls, 1);
+
+  auto read = trim_to_largest_spanned_interval(ovls, spanned_intervals);
+  
+  EXPECT_EQ(read.trimmed_start(), 0);
+  EXPECT_EQ(read.trimmed_end(), 350);
+  EXPECT_EQ(read.untrimmed_length(), 500);
+}
