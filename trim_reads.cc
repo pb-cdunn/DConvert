@@ -14,10 +14,10 @@
 void write_trimmed_read(const proto::Read& read,
                         google::protobuf::io::CodedOutputStream* output)
 {
-  //std::cerr << " Read id: " << read.id() << " (" << read.trimmed_start();
-  //std::cerr << "-" << read.trimmed_end() << ") " << read.untrimmed_length();
-  //if(read.trimmed_end() - read.trimmed_start() != read.untrimmed_length()) std::cerr << " TRIMMED";
-  //std::cerr << std::endl;
+  std::cerr << " Read id: " << read.id() << " (" << read.trimmed_start();
+  std::cerr << "-" << read.trimmed_end() << ") " << read.untrimmed_length();
+  if(read.trimmed_end() - read.trimmed_start() != read.untrimmed_length()) std::cerr << " TRIMMED";
+  std::cerr << std::endl;
   output->WriteVarint32(read.ByteSize());
   read.SerializeToCodedStream(output);
 }
@@ -31,9 +31,9 @@ int main(int argc, char* argv[])
   }
   
   std::string overlap_file_name;
-  int agglomeration_distance = 100;
+  int agglomeration_distance = 150;
   int termination_count_threshold = 3;
-  int max_deception_length = 400;
+  int max_deception_length = 150;
   int min_spanned_coverage = 1;
 
   int arg = 1;
@@ -98,15 +98,16 @@ int main(int argc, char* argv[])
                                      max_deception_length, min_spanned_coverage);
         write_trimmed_read(trimmed_read, coded_read_output);
         counter++;
-        if(counter % 1000 == 0) std::cerr << "Trimming read " << counter << std::endl;
-        if(counter % 2000 == 0) break;
+        //if(counter % 1000 == 0) std::cerr << "Trimming read " << counter << " id: " << current_id1 << std::endl;
+        //if(counter % 15000 == 0) break;
       }
       overlaps.clear();
       current_id1 = overlap.id_1();
     }
-    overlaps.push_back(overlap);
+    overlaps.emplace_back(overlap);
   }
-  
+  std::cerr << "Trimmed " << counter << " reads." << std::endl;
+
   if(overlaps.size() > 0) {
     trimmed_read = trim_overlaps(&overlaps, agglomeration_distance, termination_count_threshold,
                                 max_deception_length, min_spanned_coverage);
