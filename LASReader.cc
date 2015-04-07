@@ -6,7 +6,7 @@
 #include <cstring>
 #include <stdlib.h>
 
-LASReader::LASReader(std::string las_name)
+LASReader::LASReader(std::string las_name, std::string db_name)
 {
   // Open the LAS file.
   char* c_las_name = (char*)malloc(las_name.size() * sizeof(char));
@@ -14,6 +14,14 @@ LASReader::LASReader(std::string las_name)
   input = dalign::Fopen(c_las_name, "r");
   free(c_las_name);
   
+  db = &_db;  
+  char* c_db_name = (char*)malloc(db_name.size() * sizeof(char));
+  strcpy(c_db_name, db_name.c_str());
+  Open_DB(c_db_name, db);
+  free(c_db_name);
+  dalign::Trim_DB(db);
+
+
   // Do some boilerplate reading through initial fields of the LAS file.
   fread(&num_overlaps,sizeof(dalign::int64),1,input);
   fread(&tspace,sizeof(int),1,input);
@@ -53,8 +61,8 @@ int LASReader::next_overlap(proto::Overlap* overlap)
   overlap->set_start_2(ovl->path.bbpos);
   overlap->set_end_1(ovl->path.aepos);
   overlap->set_end_2(ovl->path.bepos);
-  overlap->set_length_1(ovl->alen);
-  overlap->set_length_2(ovl->blen);
+  overlap->set_length_1(db->reads[ovl->aread].rlen);
+  overlap->set_length_2(db->reads[ovl->bread].rlen);
   
   overlap->set_forward(!COMP(ovl->flags));
   
@@ -73,6 +81,7 @@ int LASReader::next_overlap(proto::Overlap* overlap)
 
 LASReader::~LASReader()
 {
+  Close_DB(db);
   fclose(input);
   free(trace);
 }

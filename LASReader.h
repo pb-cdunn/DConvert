@@ -11,7 +11,7 @@
 
 class LASReader {
   public:
-    LASReader(std::string las_name);
+    LASReader(std::string las_name, std::string db_name);
     ~LASReader();
 
     int next_overlap(proto::Overlap* overlap);
@@ -23,6 +23,8 @@ class LASReader {
     uint16_t* trace;
     dalign::Overlap _ovl, *ovl;
     FILE* input;
+    dalign::HITS_DB _db;
+    dalign::HITS_DB* db; 
 
 };
 #endif

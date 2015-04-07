@@ -7,24 +7,40 @@
 
 #include <iostream>
 
+bool is_big_enough(const proto::Overlap& overlap)
+{
+  float coverage = (overlap.end_1() - overlap.start_1())/static_cast<float>(overlap.length_1());
+  return coverage > 0.02;
+}
 int main(int argc, char* argv[])
 {
-  if(argc != 2) {
-    std::cout << "Usage: read_from_las <las_name>" << std::endl;
+  if(argc < 5) {
+    std::cout << "Usage: read_from_las --las <las_name> --db <db_name>" << std::endl;
     exit(1);
   }
-  
-  std::string las_name = std::string(argv[1]);
+  std::string las_file_name, db_file_name;
 
-  auto las_reader = LASReader(las_name);
+  int arg = 1;
+  while(arg < argc) {
+    if(strcmp(argv[arg], "--las") == 0) {
+      las_file_name = std::string(argv[++arg]);
+    }
+    if(strcmp(argv[arg], "--db") == 0) {
+      db_file_name= std::string(argv[++arg]);
+    }
+    arg++;
+  }
+  
+  auto las_reader = LASReader(las_file_name, db_file_name);
   proto::Overlap overlap;
   
   auto raw_output = new google::protobuf::io::OstreamOutputStream(&std::cout);
   auto coded_output = new google::protobuf::io::CodedOutputStream(raw_output);
   
-  int counter = 0;
-  int length_counter = 0;
+  int64_t counter = 0;
+  int64_t length_counter = 0;
   while(las_reader.next_overlap(&overlap)) {
+    if(!is_big_enough(overlap)) continue;
     coded_output->WriteVarint32(overlap.ByteSize());
     overlap.SerializeToCodedStream(coded_output);
     ++counter;
@@ -32,7 +48,7 @@ int main(int argc, char* argv[])
   }
 
   std::cerr << "Read " << counter << " records of total length " << length_counter;
-  std::cerr << " from " << las_name << "." << std::endl;
+  std::cerr << " from " << las_file_name << "." << std::endl;
 
   delete coded_output;
   delete raw_output;
