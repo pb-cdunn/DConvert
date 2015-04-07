@@ -178,6 +178,7 @@ int main(int argc, char* argv[])
   void* buffer = (void*)malloc(buffer_size);
   uint32_t record_size = 0;
   
+  int last_id = 0; 
   while(coded_read_input->ReadVarint32(&record_size)) {
     if(record_size > buffer_size) {
       buffer_size = record_size * 1.2;
@@ -187,10 +188,19 @@ int main(int argc, char* argv[])
     coded_read_input->ReadRaw(buffer, record_size);
     trimmed_read.ParseFromArray(buffer, record_size);
     
+    delete coded_read_input;
+    coded_read_input = new google::protobuf::io::CodedInputStream(raw_read_input);
+
+    int skipped_reads = trimmed_read.id() - last_id - 1;
+    for(int i = 0; i < skipped_reads; i++) {
+      trimmed_read_boundaries.emplace_back(std::make_pair(0, 0));
+    }
+
     trimmed_read_boundaries.emplace_back(std::make_pair(trimmed_read.trimmed_start(),
                                                         trimmed_read.trimmed_end()));
+    last_id = trimmed_read.id();
   } 
-  
+
   std::cerr << "Read " << trimmed_read_boundaries.size() << " read bounds." << std::endl;
   proto::Overlap overlap;
 
@@ -202,24 +212,26 @@ int main(int argc, char* argv[])
     
     coded_overlap_input->ReadRaw(buffer, record_size);
     overlap.ParseFromArray(buffer, record_size);    
+    delete coded_overlap_input;
+    coded_overlap_input = new google::protobuf::io::CodedInputStream(raw_overlap_input);
     
-    std::cerr << "*******************" << std::endl;
-    std::cerr << overlap.DebugString() << std::endl;
+    //std::cerr << "*******************" << std::endl;
+    //std::cerr << overlap.DebugString() << std::endl;
     auto bounds_1 = trimmed_read_boundaries.at(overlap.id_1() - 1);
     auto bounds_2 = trimmed_read_boundaries.at(overlap.id_2() - 1);
     
-    std::cerr << bounds_1.first << " " << bounds_1.second << std::endl;
-    std::cerr << bounds_2.first << " " << bounds_2.second << std::endl << std::endl;
+    //std::cerr << bounds_1.first << " " << bounds_1.second << std::endl;
+    //std::cerr << bounds_2.first << " " << bounds_2.second << std::endl << std::endl;
 
     trim_overlap(&overlap, bounds_1, bounds_2);
-    std::cerr << overlap.DebugString() << std::endl;   
-    std::cerr << "*******************" << std::endl;
+    //std::cerr << overlap.DebugString() << std::endl;   
+    //std::cerr << "*******************" << std::endl;
 
     if(overlap.end_1() > overlap.start_1() &&
        overlap.end_2() > overlap.start_2()) {
       write_overlap(overlap, coded_output);
     } else {
-      std::cerr << "Skipping it." << std::endl;
+      //std::cerr << "Skipping it." << std::endl;
     }
   }
   
