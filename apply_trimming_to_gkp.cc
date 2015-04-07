@@ -44,9 +44,7 @@ int main(int argc, char* argv[])
   auto num_reads = gk_store->gkStore_getNumFragments();
   gkFragment gk_fragment;
   
-  for(uint32_t i=1; i<=num_reads; i++) {
-    
-    coded_read_input->ReadVarint32(&record_size);
+  while(coded_read_input->ReadVarint32(&record_size)) {
     if(record_size > buffer_size) {
       buffer_size = record_size * 1.2;
       buffer = (void*) realloc(buffer, buffer_size);
@@ -54,13 +52,16 @@ int main(int argc, char* argv[])
     coded_read_input->ReadRaw(buffer, record_size);
     trimmed_read.ParseFromArray(buffer, record_size);
 
+    delete coded_read_input;
+    coded_read_input = new google::protobuf::io::CodedInputStream(raw_read_input);
 
-    gk_store->gkStore_getFragment(i, &gk_fragment, GKFRAGMENT_QLT);
+    gk_store->gkStore_getFragment(trimmed_read.id(), &gk_fragment, GKFRAGMENT_QLT);
 
     gk_fragment.gkFragment_setClearRegion(trimmed_read.trimmed_start(),
                                           trimmed_read.trimmed_end(),
                                           AS_READ_CLEAR_OBTCHIMERA);
-    std::cerr << "Setting read " << trimmed_read.id() << " to " << trimmed_read.trimmed_start() << " " << trimmed_read.trimmed_end() << std::endl;
+    std::cerr << "Setting read " << trimmed_read.id() << " from " << trimmed_read.untrimmed_length() <<
+      " to " << trimmed_read.trimmed_start() << " " << trimmed_read.trimmed_end() << std::endl;
     gk_store->gkStore_setFragment(&gk_fragment);
   } 
   
