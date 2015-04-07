@@ -28,10 +28,26 @@ bool is_same_overlap_pair(const proto::Overlap& lhs, const proto::Overlap& rhs)
          lhs.forward() == rhs.forward();
 }
 
+bool extends_to_end(const proto::Overlap& overlap)
+{
+  if(overlap.start_1() == 0 || overlap.start_2() == 0)
+    return true;
+
+  if(overlap.end_1() == overlap.length_1() || overlap.end_2() == overlap.length_2())
+    return true;
+  
+  return false;
+}
 bool is_better_overlap(const proto::Overlap& lhs, const proto::Overlap& rhs)
 {
-  if(lhs.end_1() - lhs.start_1() > rhs.end_1() - rhs.start_1()) return true;
-  if(lhs.end_2() - lhs.start_2() > rhs.end_2() - rhs.start_2()) return true;
+  if(extends_to_end(lhs) && !extends_to_end(rhs)) return true;
+
+  if((lhs.end_1() - lhs.start_1() > rhs.end_1() - rhs.start_1()) ||
+     (lhs.end_2() - lhs.start_2() > rhs.end_2() - rhs.start_2())) {
+    return true;
+  } else {
+    return false;
+  }
   if(lhs.diffs() < rhs.diffs()) return true;
 
   return false;
@@ -118,7 +134,10 @@ void create_ovl_overlap(OVSoverlap* celera_ovl, const proto::Overlap& overlap)
   celera_ovl->dat.ovl.corr_erate = static_cast<double>(overlap.diffs())/(overlap.end_1() - overlap.start_1()) * 10000;
 
   if(celera_ovl->dat.ovl.orig_erate > 1000) {
-    std::cerr << "WARNING: Very high erate for overlap " << overlap.DebugString() << std::endl;
+    //std::cerr << "WARNING: Very high erate (" << celera_ovl->dat.ovl.orig_erate <<
+    //  ") for overlap " << overlap.DebugString() << std::endl;
+    //std::cerr << "WARNING: Very high erate (" << celera_ovl->dat.ovl.orig_erate <<
+    //  ") for overlap " << overlap.id_1() << " " << overlap.id_2() << std::endl;
   }
   celera_ovl->dat.ovl.seed_value = 0; // whatever
   celera_ovl->dat.ovl.type = AS_OVS_TYPE_OVL;
