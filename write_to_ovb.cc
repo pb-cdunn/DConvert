@@ -42,8 +42,8 @@ int main(int argc, char* argv[])
   auto coded_input = new google::protobuf::io::CodedInputStream(raw_input);
   
   int counter = 0; 
-  int length_counter = 0;
-  int written_counter = 0;
+  int64_t length_counter = 0;
+  int64_t written_counter = 0;
 
   int buffer_size = 1024;
   void* buffer = (void*)malloc(buffer_size);
@@ -59,6 +59,8 @@ int main(int argc, char* argv[])
 
     coded_input->ReadRaw(buffer, record_size);
     overlap.ParseFromArray(buffer, record_size);
+    delete coded_input;
+    coded_input = new google::protobuf::io::CodedInputStream(raw_input);
     
     if(overlap.id_1() < overlap.id_2()) {
       writer_ptr->write_overlap(overlap);
