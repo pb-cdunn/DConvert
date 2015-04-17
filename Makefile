@@ -28,12 +28,16 @@ CXXFLAGS+= -Wno-write-strings
 # that C++11 complains about, but again, whatever
 CXXFLAGS+= -Wno-literal-suffix
 
-LDFLAGS=-L/home/UNIXHOME/mkinsella/local/lib -lprotobuf
+LOCAL=/lustre/hpcprod/cdunn/mk/local
+LDFLAGS=-L${LOCAL}/lib -lprotobuf
+
+CPATH=${LOCAL}/include
+export CPATH
 
 ifeq ($(TRAVIS),true)
 	PROTOC_EXE=protoc
 else
-	PROTOC_EXE=~/local/bin/protoc
+	PROTOC_EXE=${LOCAL}/bin/protoc
 endif
 
 # The protocol buffer files and how to make them
