@@ -28,10 +28,14 @@ CXXFLAGS+= -Wno-write-strings
 # that C++11 complains about, but again, whatever
 CXXFLAGS+= -Wno-literal-suffix
 
-LOCAL=/lustre/hpcprod/cdunn/mk/local
-LDFLAGS=-L${LOCAL}/lib -lprotobuf
+GTEST=${LOCAL}/../gtest-1.7.0
 
-CPATH=${LOCAL}/include
+LOCAL=/lustre/hpcprod/cdunn/mk/local
+LDFLAGS=-L${LOCAL}/lib -lprotobuf -L${GTEST}
+
+CPATH=${LOCAL}/include:${GTEST}/include
+#LIBRARY_PATH=${GTEST}
+#export LD_LIBRARY_PATH
 export CPATH
 
 ifeq ($(TRAVIS),true)
@@ -111,3 +115,6 @@ TESTS=$(patsubst %.cc,%,$(TESTS_SRCS))
 test: LDLIBS+=-lgtest -lgtest_main -lpthread -L. -ldconvert -lprotobuf
 test: CXXFLAGS+=-I. -O0
 test: $(STATICLIB) $(TESTS)
+
+run:
+	LD_LIBRARY_PATH=${LOCAL}/lib tests/trimmer_tests
