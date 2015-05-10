@@ -73,6 +73,7 @@ int main(int argc, char* argv[])
   std::cerr << "Received " << counter << " records of total length " << length_counter << std::endl;
   std::cerr << "Wrote " << written_counter << " of them." << std::endl;
 
+  delete writer_ptr;
   free(buffer);
   delete coded_input;
   delete raw_input;
