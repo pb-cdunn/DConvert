@@ -1,3 +1,6 @@
+export LD_LIBRARY_PATH:=/lustre/hpcprod/cdunn/mk/local/lib
+export LD_LIBRARY_PATH:=/home/cdunn/local/lib
+#CXX:=./wrap-module-load.sh -p /lustre/hpcprod/cdunn/modulefiles -m mkinsella which g++
 # The location of the Celera Assember installation
 CELERA_DIR=celera_assembler/wgs-8.1
 
@@ -29,8 +32,10 @@ CXXFLAGS+= -Wno-write-strings
 CXXFLAGS+= -Wno-literal-suffix
 
 GTEST=${LOCAL}/../gtest-1.7.0
+GTEST=/lustre/hpcprod/cdunn/mk/local/../gtest-1.7.0
 
 LOCAL=/lustre/hpcprod/cdunn/mk/local
+LOCAL=/home/cdunn/local
 LDFLAGS=-L${LOCAL}/lib -lprotobuf -L${GTEST}
 
 CPATH=${LOCAL}/include:${GTEST}/include
@@ -118,3 +123,5 @@ test: $(STATICLIB) $(TESTS)
 
 run:
 	LD_LIBRARY_PATH=${LOCAL}/lib tests/trimmer_tests
+foo:
+	${CXX}
