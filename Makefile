@@ -23,6 +23,7 @@ CELERA_CXXFLAGS+=$(INC_DIRS)
 # and that's the end of the celera-specific stuff
 
 CXXFLAGS=-std=c++11 -g -O1
+CXXFLAGS=-std=c++11 -g
 
 # In the daligner C code, there's a bunch of code c++ would call a string
 # constant to char* conversion, but whatever 
