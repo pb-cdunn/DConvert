@@ -1,4 +1,4 @@
-// vim: set et ts=2 sts=2 sw=2
+// vim: set et ts=2 sts=2 sw=2:
 #include "OVBWriter.h"
 #include "Overlap.pb.h"
 #include "IndexMapping.h"
@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 
@@ -31,8 +32,8 @@ int main(int argc, char* argv[])
     exit(2);
   }
   
-  std::string ovb_style, ovb_name;
-  std::string map_gkp_name, map_dazz_name;
+  std::string ovb_style;
+  std::string fn_map_gkp, fn_map_dazz, fn_overlaps;
 
   int arg = 1;
   while(arg < argc) {
@@ -40,10 +41,13 @@ int main(int argc, char* argv[])
       ovb_style = std::string(argv[++arg]);
     }
     if(strcmp(argv[arg], "--map-dazz") == 0) {
-      map_dazz_name = std::string(argv[++arg]);
+      fn_map_dazz = std::string(argv[++arg]);
     }
     if(strcmp(argv[arg], "--map-gkp") == 0) {
-      map_gkp_name = std::string(argv[++arg]);
+      fn_map_gkp = std::string(argv[++arg]);
+    }
+    if(strcmp(argv[arg], "--overlaps") == 0) {
+      fn_overlaps = std::string(argv[++arg]);
     }
     arg++;
   }
@@ -59,11 +63,17 @@ int main(int argc, char* argv[])
   }
 
   DConvert::IndexMapping im;
-  im.Populate(map_dazz_name, map_gkp_name);
+  im.Populate(fn_map_dazz, fn_map_gkp);
 
   proto::Overlap overlap;
   
-  auto raw_input = new google::protobuf::io::IstreamInputStream(&std::cin);
+  std::istream* ovin = &std::cin;
+  std::ifstream fovin;
+  if (!fn_overlaps.empty() && fn_overlaps != "-") {
+    fovin.open(fn_overlaps.c_str());
+    ovin = &fovin;
+  }
+  auto raw_input = new google::protobuf::io::IstreamInputStream(ovin);
   auto coded_input = new google::protobuf::io::CodedInputStream(raw_input);
   
   int counter = 0; 
