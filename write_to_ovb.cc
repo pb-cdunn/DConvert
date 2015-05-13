@@ -28,12 +28,13 @@ int dazz2gkfrg(DConvert::IndexMapping const& im, int dazz_id)
 int main(int argc, char* argv[])
 {
   if(argc < 3) {
-    std::cerr << "Usage: write_to_ovb --style <obt or ovl>" << std::endl;
+    std::cerr << "Usage: write_to_ovb --style <obt or ovl> [--map-dazz <file> --map-gkp <file> --overlaps <file (else stdin)> --out <file (else stdout)>\n";
     exit(2);
   }
   
   std::string ovb_style;
   std::string fn_map_gkp, fn_map_dazz, fn_overlaps;
+  std::string fn_out = "-";
 
   int arg = 1;
   while(arg < argc) {
@@ -49,14 +50,17 @@ int main(int argc, char* argv[])
     if(strcmp(argv[arg], "--overlaps") == 0) {
       fn_overlaps = std::string(argv[++arg]);
     }
+    if(strcmp(argv[arg], "--out") == 0) {
+      fn_out = std::string(argv[++arg]);
+    }
     arg++;
   }
   
   OVBWriter* writer_ptr;
   if(ovb_style == "obt") {
-    writer_ptr = new OBTWriter("-");
+    writer_ptr = new OBTWriter(fn_out);
   } else if(ovb_style == "ovl") {
-    writer_ptr = new OVLWriter("-");
+    writer_ptr = new OVLWriter(fn_out);
   } else {
     std::cerr << "OVB style (-S) must be obt or ovl." << std::endl;
     exit(2);
