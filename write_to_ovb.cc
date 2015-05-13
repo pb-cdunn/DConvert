@@ -99,6 +99,8 @@ int main(int argc, char* argv[])
     
     int o1 = dazz2gkfrg(im, overlap.id_1());
     int o2 = dazz2gkfrg(im, overlap.id_2());
+    overlap.set_id_1(o1);
+    overlap.set_id_2(o2);
 
     if(overlap.id_1() < overlap.id_2()) {
       writer_ptr->write_overlap(overlap);
