@@ -1,4 +1,6 @@
+// vim: set et ts=2 sts=2 sw=2
 #include "Read.pb.h"
+#include "IndexMapping.h"
 
 #include "AS_PER_gkpStore.H"
 
@@ -9,8 +11,6 @@
 #include <unistd.h>
 
 #include <iostream>
-#include <fstream>
-#include <unordered_map>
 
 char             fastqUIDmapName[FILENAME_MAX];
 
@@ -55,27 +55,8 @@ int main(int argc, char* argv[])
   auto num_reads = gk_store->gkStore_getNumFragments();
   gkFragment gk_fragment;
   
-  // sprintf(fastqUIDmapName, "%s.fastqUIDmap", gkp_name.c_str());
-  std::cerr << "name:'" << map_gkp_name << "'\n";
-  std::ifstream fni(map_gkp_name.c_str());
-  std::unordered_map<int, int> zmw2uid;
-  while (fni) {
-    int uid, zmw;
-    fni >> uid >> zmw;
-    // std::cerr << uid << "<-" << zmw << "\n";
-    zmw2uid[zmw] = uid;
-  }
-  std::cerr << "nuniq:" << zmw2uid.size() << "\n";
-
-  std::cerr << "name:'" << map_dazz_name << "'\n";
-  std::ifstream fdazz(map_dazz_name.c_str());
-  std::unordered_map<int, int> dazz2zmw;
-  while (fdazz) {
-    int dazz_id, zmw, length;
-    fdazz >> dazz_id >> zmw >> length;
-    dazz2zmw[dazz_id] = zmw;
-  }
-  std::cerr << "nuniq:" << dazz2zmw.size() << "\n";
+  DConvert::IndexMapping im;
+  im.Populate(map_dazz_name, map_gkp_name);
 
   while(coded_read_input->ReadVarint32(&record_size)) {
     if(record_size > buffer_size) {
@@ -92,12 +73,12 @@ int main(int argc, char* argv[])
     std::cerr << "coded_read_input:" << (void*)coded_read_input << "\n";
 
     int const dazz_id = trimmed_read.id();
-    int const zmw = dazz2zmw[dazz_id];
-    if (zmw2uid.find(zmw) == zmw2uid.end()) {
-      std::cerr << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
-      continue;  // already removed?
+    int zmw;
+    int const frgid = im.GetGkFragmentIndex(dazz_id, &zmw);
+    if (frgid == -1) {
+        std::cerr << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
+        continue;  // already removed?
     }
-    int const frgid = zmw2uid[zmw] - 1;  // off by 1, for some reason ~cdunn
     gk_store->gkStore_getFragment(frgid, &gk_fragment, GKFRAGMENT_QLT);
 
     std::cerr << "Setting read " << trimmed_read.id() << "(" << frgid << ") from " << trimmed_read.untrimmed_length() <<

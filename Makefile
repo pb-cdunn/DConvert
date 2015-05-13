@@ -83,7 +83,7 @@ $(EXE_OBJS): CXXFLAGS+=$(CELERA_CXXFLAGS)
 las_to_ovb: $(CELERA_INDEPENDENT_OBJS) $(CELERA_DEPENDENT_OBJS) las_to_ovb.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(CELERA_LDFLAGS)
 
-write_to_ovb: $(CELERA_INDEPENDENT_OBJS) $(CELERA_DEPENDENT_OBJS) write_to_ovb.o
+write_to_ovb: $(CELERA_INDEPENDENT_OBJS) $(CELERA_DEPENDENT_OBJS) write_to_ovb.o IndexMapping.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(CELERA_LDFLAGS)
 
 read_from_las: $(CELERA_INDEPENDENT_OBJS) read_from_las.o
@@ -95,7 +95,7 @@ trim_reads: $(CELERA_INDEPENDENT_OBJS) trim_reads.o
 trim_overlaps: $(CELERA_INDEPENDENT_OBJS) trim_overlaps.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-apply_trimming_to_gkp: $(CELERA_INDEPENDENT_OBJS) apply_trimming_to_gkp.o
+apply_trimming_to_gkp: $(CELERA_INDEPENDENT_OBJS) apply_trimming_to_gkp.o IndexMapping.o
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(CELERA_LDFLAGS)
 
 $(CELERA_DEPENDENT_OBJS): CXXFLAGS+=$(CELERA_CXXFLAGS)
