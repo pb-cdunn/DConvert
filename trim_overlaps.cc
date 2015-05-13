@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <fstream>
 
 void write_overlap(const proto::Overlap& overlap,
                    google::protobuf::io::CodedOutputStream* output)
@@ -122,11 +123,11 @@ void trim_overlap(proto::Overlap* overlap,
 int main(int argc, char* argv[])
 {
   if(argc < 5) {
-    std::cout << "Usage: trim_overlaps --overlaps <overlaps> --trimmed_reads <trimmed_reads>" << std::endl;
-    exit(1);
+    std::cout << "Usage: trim_overlaps --overlaps <overlaps> --trimmed_reads <trimmed_reads> [--out <trimmed_overlaps>]" << std::endl;
+    exit(2);
   }
 
-  std::string overlap_file_name, trimmed_read_file_name;
+  std::string overlap_file_name, trimmed_read_file_name, out_file_name;
 
   int arg = 1;
   while(arg < argc) {
@@ -135,6 +136,9 @@ int main(int argc, char* argv[])
     }
     if(strcmp(argv[arg], "--trimmed_reads") == 0) {
       trimmed_read_file_name = std::string(argv[++arg]);
+    }
+    if(strcmp(argv[arg], "--out") == 0) {
+      out_file_name = std::string(argv[++arg]);
     }
     arg++;
   }
@@ -163,11 +167,16 @@ int main(int argc, char* argv[])
     read_input_fd = open(trimmed_read_file_name.c_str(), O_RDONLY);
     raw_read_input = new google::protobuf::io::FileInputStream(read_input_fd);
   }
-
+  std::ostream* out = &std::cout;
+  std::ofstream out_fstream;
+  if (!out_file_name.empty() && out_file_name != "-") {
+    out_fstream.open(out_file_name.c_str());
+    out = &out_fstream;
+  }
   auto coded_overlap_input = new google::protobuf::io::CodedInputStream(raw_overlap_input);
   auto coded_read_input = new google::protobuf::io::CodedInputStream(raw_read_input);
 
-  auto raw_output = new google::protobuf::io::OstreamOutputStream(&std::cout);
+  auto raw_output = new google::protobuf::io::OstreamOutputStream(out);
   auto coded_output = new google::protobuf::io::CodedOutputStream(raw_output);
 
   
