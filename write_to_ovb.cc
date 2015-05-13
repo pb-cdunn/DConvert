@@ -11,17 +11,24 @@
 
 int main(int argc, char* argv[])
 {
-  if(argc != 3) {
-    std::cout << "Usage: write_to_ovb --style <obt or ovl>" << std::endl;
-    exit(1);
+  if(argc < 3) {
+    std::cerr << "Usage: write_to_ovb --style <obt or ovl>" << std::endl;
+    exit(2);
   }
   
   std::string ovb_style, ovb_name;
+  std::string map_gkp_name, map_dazz_name;
 
   int arg = 1;
   while(arg < argc) {
     if(strcmp(argv[arg], "--style") == 0) {
       ovb_style = std::string(argv[++arg]);
+    }
+    if(strcmp(argv[arg], "--map-dazz") == 0) {
+      map_dazz_name = std::string(argv[++arg]);
+    }
+    if(strcmp(argv[arg], "--map-gkp") == 0) {
+      map_gkp_name = std::string(argv[++arg]);
     }
     arg++;
   }
@@ -33,7 +40,7 @@ int main(int argc, char* argv[])
     writer_ptr = new OVLWriter("-");
   } else {
     std::cerr << "OVB style (-S) must be obt or ovl." << std::endl;
-    exit(1);
+    exit(2);
   }
 
   proto::Overlap overlap;
