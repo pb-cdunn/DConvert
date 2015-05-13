@@ -1,6 +1,7 @@
 // vim: set et ts=2 sts=2 sw=2
 #include "OVBWriter.h"
 #include "Overlap.pb.h"
+#include "IndexMapping.h"
 
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
@@ -8,8 +9,21 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <exception>
 #include <iostream>
+#include <sstream>
 
+int dazz2gkfrg(DConvert::IndexMapping const& im, int dazz_id)
+{
+    int zmw;
+    int const frgid = im.GetGkFragmentIndex(dazz_id, &zmw);
+    if (frgid == -1) {
+        std::ostringstream msg;
+        msg << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
+        throw std::runtime_error(msg.str());
+    }
+    return frgid;
+}
 int main(int argc, char* argv[])
 {
   if(argc < 3) {
@@ -44,6 +58,9 @@ int main(int argc, char* argv[])
     exit(2);
   }
 
+  DConvert::IndexMapping im;
+  im.Populate(map_dazz_name, map_gkp_name);
+
   proto::Overlap overlap;
   
   auto raw_input = new google::protobuf::io::IstreamInputStream(&std::cin);
@@ -70,6 +87,9 @@ int main(int argc, char* argv[])
     delete coded_input;
     coded_input = new google::protobuf::io::CodedInputStream(raw_input);
     
+    int o1 = dazz2gkfrg(im, overlap.id_1());
+    int o2 = dazz2gkfrg(im, overlap.id_2());
+
     if(overlap.id_1() < overlap.id_2()) {
       writer_ptr->write_overlap(overlap);
       ++written_counter;
