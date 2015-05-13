@@ -21,7 +21,9 @@ int dazz2gkfrg(DConvert::IndexMapping const& im, int dazz_id)
     if (frgid == -1) {
         std::ostringstream msg;
         msg << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
-        throw std::runtime_error(msg.str());
+        // throw std::runtime_error(msg.str());
+        // Maybe this is ok?
+        std::cerr << msg.rdbuf();
     }
     return frgid;
 }
@@ -103,6 +105,7 @@ int main(int argc, char* argv[])
     
     int o1 = dazz2gkfrg(im, overlap.id_1());
     int o2 = dazz2gkfrg(im, overlap.id_2());
+    if (o1 == -1 || o2 == -1) continue; // Skip!
     overlap.set_id_1(o1);
     overlap.set_id_2(o2);
 
