@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <fstream>
 
 void write_trimmed_read(const proto::Read& read,
                         google::protobuf::io::CodedOutputStream* output)
@@ -31,6 +32,7 @@ int main(int argc, char* argv[])
   }
   
   std::string overlap_file_name;
+  std::string fn_out = "";
   int agglomeration_distance = 150;
   int termination_count_threshold = 3;
   int max_deception_length = 150;
@@ -53,10 +55,19 @@ int main(int argc, char* argv[])
     if(strcmp(argv[arg], "--min_spanned_coverage") == 0) {
       min_spanned_coverage = atoi(argv[++arg]);
     }
+    if(strcmp(argv[arg], "--out") == 0) {
+      fn_out = std::string(argv[++arg]);
+    }
     arg++;
   }
   
-  auto raw_read_output = new google::protobuf::io::OstreamOutputStream(&std::cout);
+  std::ostream* oraw = &std::cout;
+  std::ofstream ofraw;
+  if (!fn_out.empty()) {
+    ofraw.open(fn_out.c_str());
+    oraw = &ofraw;
+  }
+  auto raw_read_output = new google::protobuf::io::OstreamOutputStream(oraw);
   auto coded_read_output = new google::protobuf::io::CodedOutputStream(raw_read_output);
 
   google::protobuf::io::ZeroCopyInputStream* raw_input = nullptr;
@@ -111,6 +122,7 @@ int main(int argc, char* argv[])
   if(overlaps.size() > 0) {
     trimmed_read = trim_overlaps(&overlaps, agglomeration_distance, termination_count_threshold,
                                 max_deception_length, min_spanned_coverage);
+    std::cerr << " plus one more!\n";
     write_trimmed_read(trimmed_read, coded_read_output);
   }
   
