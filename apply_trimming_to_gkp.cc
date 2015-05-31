@@ -66,19 +66,20 @@ int main(int argc, char* argv[])
     coded_read_input->ReadRaw(buffer, record_size);
     std::cerr << "Parsing from protobuf array.\n";
     trimmed_read.ParseFromArray(buffer, record_size);
-    std::cerr << "Parsed from protobuf array.\n";
+    std::cerr << "Parsed from protobuf array. trimmed_read.id()=" << trimmed_read.id() << "\n";
 
     delete coded_read_input;
     coded_read_input = new google::protobuf::io::CodedInputStream(raw_read_input);
-    std::cerr << "coded_read_input:" << (void*)coded_read_input << "\n";
+    //std::cerr << "coded_read_input:" << (void*)coded_read_input << "\n";
 
-    int const dazz_id = trimmed_read.id();
-    int zmw;
-    int const frgid = im.GetGkFragmentIndex(dazz_id, &zmw);
+    DConvert::IndexMapping::DazzIndex const dazz_id = trimmed_read.id() - 1;
+    DConvert::IndexMapping::ReadIndex zmw;
+    DConvert::IndexMapping::UidIndex const frgid = im.GetGkFragmentIndex(dazz_id, &zmw);
     if (frgid == -1) {
         std::cerr << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
         continue;  // already removed?
     }
+    std::cerr << "Found zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
     gk_store->gkStore_getFragment(frgid, &gk_fragment, GKFRAGMENT_QLT);
 
     std::cerr << "Setting read " << trimmed_read.id() << "(" << frgid << ") from " << trimmed_read.untrimmed_length() <<

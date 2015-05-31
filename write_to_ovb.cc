@@ -14,10 +14,10 @@
 #include <iostream>
 #include <sstream>
 
-int dazz2gkfrg(DConvert::IndexMapping const& im, int dazz_id)
+int dazz2gkfrg(DConvert::IndexMapping const& im, DConvert::IndexMapping::DazzIndex dazz_id)
 {
-    int zmw;
-    int const frgid = im.GetGkFragmentIndex(dazz_id, &zmw);
+    DConvert::IndexMapping::ReadIndex zmw;
+    DConvert::IndexMapping::UidIndex const frgid = im.GetGkFragmentIndex(dazz_id, &zmw);
     if (frgid == -1) {
         std::ostringstream msg;
         msg << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
@@ -103,8 +103,8 @@ int main(int argc, char* argv[])
     delete coded_input;
     coded_input = new google::protobuf::io::CodedInputStream(raw_input);
     
-    int o1 = dazz2gkfrg(im, overlap.id_1());
-    int o2 = dazz2gkfrg(im, overlap.id_2());
+    auto o1 = dazz2gkfrg(im, overlap.id_1() - 1);
+    auto o2 = dazz2gkfrg(im, overlap.id_2() - 1);
     if (o1 == -1 || o2 == -1) continue; // Skip!
     overlap.set_id_1(o1);
     overlap.set_id_2(o2);

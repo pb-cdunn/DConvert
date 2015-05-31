@@ -13,6 +13,9 @@
 void write_overlap(const proto::Overlap& overlap,
                    google::protobuf::io::CodedOutputStream* output)
 {
+  std::cerr << " A:" << overlap.id_1() << " [" << overlap.start_1() << "," << overlap.end_1() << "] (" << overlap.length_1() << ")\n";
+  std::cerr << " B:" << overlap.id_2() << " [" << overlap.start_2() << "," << overlap.end_2() << "] (" << overlap.length_2() << ")\n";
+  std::cerr << "  diffs=" << overlap.diffs() << "\n";
   output->WriteVarint32(overlap.ByteSize());
   overlap.SerializeToCodedStream(output);
 }
