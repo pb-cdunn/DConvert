@@ -10,6 +10,7 @@ OVBWriter::OVBWriter(std::string ovb_name)
 {
   char* c_ovb_name = (char*)malloc(ovb_name.size() * sizeof(char));
   strcpy(c_ovb_name, ovb_name.c_str());
+  cout << "AS_OVS_createBinaryOverlapFile('" << c_ovb_name << "', FALSE)\n";
   m_output_file = AS_OVS_createBinaryOverlapFile(c_ovb_name, FALSE);
   free(c_ovb_name);
 }
@@ -65,6 +66,11 @@ bool is_full_overlap(const proto::Overlap& overlap)
   bool full_on_right = (overlap.end_1() == overlap.length_1()) ||
                        (overlap.forward() && overlap.end_2() == overlap.length_2()) ||
                        (!overlap.forward() && overlap.start_2() == 0);
+  cout
+    << "1: " << overlap.start_1() << "..." << overlap.end_1() << ": " << overlap.length_1() << "\n"
+    << "2: " << overlap.start_2() << "..." << overlap.end_2() << ": " << overlap.length_2() << "\n"
+    << "forward: " << overlap.forward() << ", full_on_l=" << full_on_left << ", full_on_r=" << full_on_right << "\n"
+    ;
   return full_on_left && full_on_right;
 }
 
@@ -99,6 +105,7 @@ void create_obt_overlap(OVSoverlap* celera_ovl, const proto::Overlap& overlap)
 // Create a celera "OVL" overlap from a proto::Overlap
 void create_ovl_overlap(OVSoverlap* celera_ovl, const proto::Overlap& overlap)
 {
+  cout << __PRETTY_FUNCTION__ << "\n";
   celera_ovl->a_iid = overlap.id_1();
   celera_ovl->b_iid = overlap.id_2();
 
@@ -141,12 +148,20 @@ void create_ovl_overlap(OVSoverlap* celera_ovl, const proto::Overlap& overlap)
   }
   celera_ovl->dat.ovl.seed_value = 0; // whatever
   celera_ovl->dat.ovl.type = AS_OVS_TYPE_OVL;
+  cout
+    << celera_ovl->dat.ovl.a_hang << " "
+    << celera_ovl->dat.ovl.b_hang << " "
+    << celera_ovl->dat.ovl.orig_erate << " "
+    << celera_ovl->dat.ovl.corr_erate << " "
+    << celera_ovl->dat.ovl.type
+    << "\n";
 }
 
 void write_to_ovb(BinaryOverlapFile* output_file,
                   const proto::Overlap& overlap, 
                   void (*ovs_creator_func)(OVSoverlap*, const proto::Overlap&))
 {
+  cout << "WRITING!\n";
   OVSoverlap celera_ovl; 
   ovs_creator_func(&celera_ovl, overlap);
   AS_OVS_writeOverlap(output_file, &celera_ovl);
@@ -160,7 +175,9 @@ void unique_write(BinaryOverlapFile* output_file,
   // If this overlap is the same as the cached one, we can't write anything,
   // just see if this overlap should replace the currently cached one
   if(is_same_overlap_pair(*cached_overlap, new_overlap)) {
+    cout << "is same\n";
     if(is_better_overlap(new_overlap, *cached_overlap)) {
+      cout << " but is better.\n";
       *cached_overlap = new_overlap;
     }
     return;
@@ -168,8 +185,10 @@ void unique_write(BinaryOverlapFile* output_file,
   
   // If this is a new overlap, then we can write the cached one as long as the
   // cached overlap is a real overlap
-  if(cached_overlap->has_id_1())
+  if(cached_overlap->has_id_1()) {
+    cout << "write cached overlap.\n";
     write_to_ovb(output_file, *cached_overlap, ovs_creator_func); 
+  }
 
   // And then set the cached overlap as the current one
   *cached_overlap = new_overlap;

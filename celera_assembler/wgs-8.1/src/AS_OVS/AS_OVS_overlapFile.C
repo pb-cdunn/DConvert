@@ -96,6 +96,7 @@ AS_OVS_openBinaryOverlapFile(const char *name, int isInternal) {
 
 BinaryOverlapFile *
 AS_OVS_createBinaryOverlapFile(const char *name, int isInternal) {
+  printf("Opening AS_OVS_createBinaryOverlapFile '%s'\n", name);
   BinaryOverlapFile   *bof = (BinaryOverlapFile *)safe_malloc(sizeof(BinaryOverlapFile));
 
   AS_OVS_initializeBOF(bof, isInternal, TRUE);
@@ -119,6 +120,7 @@ AS_OVS_flushBinaryOverlapFile(BinaryOverlapFile *bof) {
 
 void
 AS_OVS_closeBinaryOverlapFile(BinaryOverlapFile *bof) {
+  printf("CLOSING!\n");
 
   if (bof == NULL)
     return;
@@ -136,10 +138,12 @@ AS_OVS_closeBinaryOverlapFile(BinaryOverlapFile *bof) {
 
 void
 AS_OVS_writeOverlap(BinaryOverlapFile *bof, OVSoverlap *overlap) {
+  printf("HELLO!\n");
 
   assert(bof->isOutput == TRUE);
 
   if (bof->bufferLen >= bof->bufferMax) {
+    printf("safeWrite...\n");
     AS_UTL_safeWrite(bof->file, bof->buffer, "AS_OVS_outputOverlap", sizeof(uint32), bof->bufferLen);
     bof->bufferLen = 0;
   }
