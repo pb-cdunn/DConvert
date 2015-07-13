@@ -21,9 +21,9 @@ int dazz2gkfrg(DConvert::IndexMapping const& im, DConvert::IndexMapping::DazzInd
     if (frgid == -1) {
         std::ostringstream msg;
         msg << "Cannot find zmw=" << zmw << " (dazz-id=" << dazz_id << ")\n";
+        std::cerr << msg.str();
         // throw std::runtime_error(msg.str());
         // Maybe this is ok?
-        std::cerr << msg.rdbuf();
     }
     return frgid;
 }
