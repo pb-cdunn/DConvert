@@ -8,10 +8,16 @@ using namespace DConvert;
 IndexMapping::UidIndex IndexMapping::GetGkFragmentIndex(DazzIndex dazzIndex, ReadIndex* zmw) const
 {
     auto dit = dazz2zmw_.find(dazzIndex);
-    if (dit == dazz2zmw_.end()) return -1;
+    if (dit == dazz2zmw_.end()) {
+        std::cerr << "dazzIndex=" << dazzIndex << " not found.\n";
+        return -1;
+    }
     *zmw = dit->second;
     auto zit = zmw2uid_.find(*zmw);
-    if (zit == zmw2uid_.end()) return -1;
+    if (zit == zmw2uid_.end()) {
+        std::cerr << "zmw=" << *zmw << "not found for dazzIndex=" << dazzIndex << "\n";
+        return -1;
+    }
     int const gkpid = zit->second;
     if (gkpid == 0)
     {
@@ -27,10 +33,11 @@ void IndexMapping::Populate(
     std::cerr << "name:'" << mapGkp << "'\n";
     std::ifstream fni(mapGkp.c_str());
     if (!fni) throw std::runtime_error(mapGkp);
+    std::string ignore_id;
     while (fni) {
         int uid;
         ReadIndex zmw;
-        fni >> uid >> zmw;
+        fni >> ignore_id >> uid >> zmw;
         // std::cerr << uid << "<-" << zmw << "\n";
         zmw2uid_[zmw] = uid;
     }
