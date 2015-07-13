@@ -46,10 +46,18 @@ int main(int argc, char* argv[])
   auto raw_output = new google::protobuf::io::OstreamOutputStream(out);
   auto coded_output = new google::protobuf::io::CodedOutputStream(raw_output);
   
+  using std::cerr;
   int64_t counter = 0;
   int64_t length_counter = 0;
   while(las_reader.next_overlap(&overlap)) {
-    if(!is_big_enough(overlap)) continue;
+    if(!is_big_enough(overlap)) {
+        continue;
+        cerr << "Skipped overlap!\n";
+    }
+    fprintf(stderr, "%04d %d %d %d %d %d %d\n",
+            counter,
+            overlap.id_1(), overlap.end_1(), overlap.length_1(),
+            overlap.id_2(), overlap.end_2(), overlap.length_2());
     coded_output->WriteVarint32(overlap.ByteSize());
     overlap.SerializeToCodedStream(coded_output);
     ++counter;
