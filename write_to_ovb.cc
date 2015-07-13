@@ -104,11 +104,12 @@ int main(int argc, char* argv[])
     delete coded_input;
     coded_input = new google::protobuf::io::CodedInputStream(raw_input);
     
+    // Subtract 1 because, well, it works.
     auto o1 = dazz2gkfrg(im, overlap.id_1() - 1);
     auto o2 = dazz2gkfrg(im, overlap.id_2() - 1);
     if (o1 == -1 || o2 == -1) {
+      cerr << "Skipped! " << overlap.id_1() << " -- " << overlap.id_2() << "\n";
       continue; // Skip!
-      cerr << "Skipped!\n";
     }
     fprintf(stderr, "%04d  %d (%d) %d %d  %d (%d) %d %d\n",
             counter,
