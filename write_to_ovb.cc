@@ -91,6 +91,7 @@ int main(int argc, char* argv[])
 
   uint32_t record_size = 0;
 
+  using std::cerr;
   while(coded_input->ReadVarint32(&record_size)) {
 
     if(record_size > buffer_size) {
@@ -105,7 +106,14 @@ int main(int argc, char* argv[])
     
     auto o1 = dazz2gkfrg(im, overlap.id_1() - 1);
     auto o2 = dazz2gkfrg(im, overlap.id_2() - 1);
-    if (o1 == -1 || o2 == -1) continue; // Skip!
+    if (o1 == -1 || o2 == -1) {
+      continue; // Skip!
+      cerr << "Skipped!\n";
+    }
+    fprintf(stderr, "%04d  %d (%d) %d %d  %d (%d) %d %d\n",
+            counter,
+            overlap.id_1(), o1, overlap.end_1(), overlap.length_1(),
+            overlap.id_2(), o2, overlap.end_2(), overlap.length_2());
     overlap.set_id_1(o1);
     overlap.set_id_2(o2);
 
