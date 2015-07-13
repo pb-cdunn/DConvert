@@ -1,3 +1,13 @@
+/celera_assembler/
+/apply_trimming_to_gkp
+/las_to_ovb
+/read_from_las
+/trim_overlaps
+/trim_reads
+/wrap-module-load.sh
+/write_to_ovb
+
+
 # Compiled Object files
 *.slo
 *.lo
