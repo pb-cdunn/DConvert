@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
         continue;
         cerr << "Skipped overlap!\n";
     }
-    fprintf(stderr, "%04d %d %d %d %d %d %d\n",
+    if (0) fprintf(stderr, "%04ld %d %d %d %d %d %d\n",
             counter,
             overlap.id_1(), overlap.end_1(), overlap.length_1(),
             overlap.id_2(), overlap.end_2(), overlap.length_2());

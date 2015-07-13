@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
       cerr << "Skipped! " << overlap.id_1() << " -- " << overlap.id_2() << "\n";
       continue; // Skip!
     }
-    fprintf(stderr, "%04d  %d (%d) %d %d  %d (%d) %d %d\n",
+    if (0) fprintf(stderr, "%04d  %d (%d) %d %d  %d (%d) %d %d\n",
             counter,
             overlap.id_1(), o1, overlap.end_1(), overlap.length_1(),
             overlap.id_2(), o2, overlap.end_2(), overlap.length_2());
