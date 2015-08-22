@@ -1,3 +1,4 @@
+// vim: set et ts=2 sts=2 sw=2:
 #include "Trimmer.h"
 
 #include "Overlap.pb.h"

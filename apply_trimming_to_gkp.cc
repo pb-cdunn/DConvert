@@ -1,4 +1,4 @@
-// vim: set et ts=2 sts=2 sw=2
+// vim: set et ts=2 sts=2 sw=2:
 #include "Read.pb.h"
 #include "IndexMapping.h"
 
@@ -53,6 +53,8 @@ int main(int argc, char* argv[])
   gk_store->gkStore_enableClearRange(AS_READ_CLEAR_OBTCHIMERA);
   gk_store->gkStore_metadataCaching(true);
   auto num_reads = gk_store->gkStore_getNumFragments();
+  using std::cerr;
+  cerr << "NumFragments in gk_store=" << num_reads << "\n";
   gkFragment gk_fragment;
   
   DConvert::IndexMapping im;

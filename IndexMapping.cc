@@ -1,4 +1,4 @@
-// vim: set et ts=4 sts=4 sw=4
+// vim: set et ts=4 sts=4 sw=4:
 #include "IndexMapping.h"
 #include <iostream>  // cerr
 #include <fstream>
@@ -33,11 +33,10 @@ void IndexMapping::Populate(
     std::cerr << "name:'" << mapGkp << "'\n";
     std::ifstream fni(mapGkp.c_str());
     if (!fni) throw std::runtime_error(mapGkp);
-    std::string ignore_id;
-    while (fni) {
+    while (fni.good()) {
         int uid;
         ReadIndex zmw;
-        fni >> ignore_id >> uid >> zmw;
+        fni >> uid >> zmw >> std::ws;
         // std::cerr << uid << "<-" << zmw << "\n";
         zmw2uid_[zmw] = uid;
     }
@@ -46,10 +45,11 @@ void IndexMapping::Populate(
     std::cerr << "name:'" << mapDazz << "'\n";
     std::ifstream fdazz(mapDazz.c_str());
     if (!fdazz) throw std::runtime_error(mapDazz);
-    while (fdazz) {
-        DazzIndex dazz_id, length;
+    while (fdazz.good()) {
+        DazzIndex dazz_id;
         ReadIndex zmw;
-        fdazz >> dazz_id >> zmw >> length;
+        fdazz >> dazz_id >> zmw >> std::ws;
+        // std::cerr << "dazz-id:" << dazz_id << "->" << zmw << "\n";
         dazz2zmw_[dazz_id] = zmw;
     }
     std::cerr << "nuniq:" << dazz2zmw_.size() << "\n";
