@@ -212,6 +212,9 @@ int main(int argc, char* argv[])
                                                         trimmed_read.trimmed_end()));
     last_id = trimmed_read.id();
   } 
+  
+  // in case the last read has no overlaps, harmless sentinel otherwise
+  trimmed_read_boundaries.emplace_back(std::make_pair(0, 0));
 
   std::cerr << "Read " << trimmed_read_boundaries.size() << " read bounds." << std::endl;
   proto::Overlap overlap;

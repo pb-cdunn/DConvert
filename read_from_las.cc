@@ -52,8 +52,8 @@ int main(int argc, char* argv[])
   int64_t length_counter = 0;
   while(las_reader.next_overlap(&overlap)) {
     if(!is_big_enough(overlap)) {
+        fprintf(stderr, "Skipped overlap: %d %d\n", overlap.id_1(), overlap.id_2());
         continue;
-        cerr << "Skipped overlap!\n";
     }
     if (0) fprintf(stderr, "%04ld %d %d %d %d %d %d\n",
             counter,
